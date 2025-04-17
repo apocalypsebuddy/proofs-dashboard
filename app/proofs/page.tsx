@@ -4,9 +4,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import UploadProofForm from "../components/UploadProofForm";
 // import { API, graphqlOperation } from "aws-amplify";
 // import { listProofs } from "../../graphql/queries";
 
+// TODO: Move to a separate file
 type Proof = {
   id: string;
   date: string;
@@ -23,6 +25,7 @@ type Proof = {
 type TabType = 'All' | 'Flagged';
 
 // Service layer to abstract API calls
+// TODO: Move to a separate file
 const proofsService = {
   // Local API implementation
   async fetchProofs(): Promise<Proof[]> {
@@ -46,8 +49,10 @@ export default function ProofsIndex() {
   const router = useRouter();
   const [proofs, setProofs] = useState<Proof[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('All');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   useEffect(() => {
+    // TODO: Move to a separate file
     const fetchProofs = async () => {
       try {
         const data = await proofsService.fetchProofs();
@@ -65,14 +70,42 @@ export default function ProofsIndex() {
     ? proofs 
     : proofs.filter(proof => proof.flagged);
 
+  const handleUpload = async (formData: FormData) => {
+    try {
+      const response = await fetch('/api/proofs', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload proof');
+      }
+
+      // Refresh the proofs list
+      const data = await proofsService.fetchProofs();
+      setProofs(data.sort((a: Proof, b: Proof) => (a.date < b.date ? 1 : -1)));
+    } catch (error) {
+      console.error('Error uploading proof:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="space-y-6 p-6 px-18">
-      {/* Header with Tabs 
-      TODO: Turn into buttons
-      TODO: Add filter by printer, date range, batch ID, etc.
-      */}
+      {/* Header with Tabs */}
       <div className="border-b border-gray-200">
-        <h1 className="text-3xl font-bold mb-6">Proofs</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Proofs</h1>
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Upload Proof
+          </button>
+        </div>
         <div className="flex space-x-4 mb-4">
           {(['All', 'Flagged'] as TabType[]).map((tab) => (
             <button
@@ -90,6 +123,12 @@ export default function ProofsIndex() {
         </div>
       </div>
 
+      <UploadProofForm
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        onSubmit={handleUpload}
+      />
+
       {/* Proofs List */}
       <div className="space-y-4">
         {filteredProofs.map((proof) => (
@@ -100,7 +139,7 @@ export default function ProofsIndex() {
           >
             {/* Info Column */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg mb-4">Info</h3>
+              <h3 className="font-semibold text-lg mb-4 text-gray-500">Info</h3>
               <p className="grid grid-cols-[100px_1fr] gap-2">
                 <span className="font-medium text-gray-600">Date:</span>
                 <span className="text-gray-400">{new Date(proof.date).toLocaleString()}</span>
