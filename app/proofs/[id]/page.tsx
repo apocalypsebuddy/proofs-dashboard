@@ -3,30 +3,34 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 type Proof = {
   id: string;
   date: string;
   batchId: string;
+  resourceId: string;
   description: string;
   customerId: string;
   customerName: string;
   printerId: string;
   printerName: string;
-  imageUrl: string;
+  printFrontUrl: string;
+  printBackUrl: string;
   flagged?: boolean;
 };
 
-export default function ProofDetail({ params }: { params: { id: string } }) {
+export default function ProofDetail() {
   const router = useRouter();
   const [proof, setProof] = useState<Proof | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { id } = useParams();
 
   useEffect(() => {
     const fetchProof = async () => {
       try {
-        const response = await fetch(`/api/proofs/${params.id}`);
+        const response = await fetch(`/api/proofs/${id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch proof');
         }
@@ -40,7 +44,7 @@ export default function ProofDetail({ params }: { params: { id: string } }) {
     };
 
     fetchProof();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -79,13 +83,23 @@ export default function ProofDetail({ params }: { params: { id: string } }) {
         
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Image Section */}
-        <div className="relative ">
-          <Image
-            src={proof.imageUrl}
-            alt="Proof Image"
-            fill
-            className="object-contain"
-          />
+        <div className="space-y-4">
+          <div className="relative h-[400px]">
+            <Image
+              src={proof.printFrontUrl}
+              alt="Proof Image Front"
+              fill
+              className="object-contain"
+            />
+          </div>
+          <div className="relative h-[400px]">
+            <Image
+              src={proof.printBackUrl}
+              alt="Proof Image Back"
+              fill
+              className="object-contain"
+            />
+          </div>
         </div>
         
         {/* Details Section */}
@@ -101,6 +115,9 @@ export default function ProofDetail({ params }: { params: { id: string } }) {
               
                 <label className="text-sm font-medium text-gray-500">Batch ID</label>
                 <p>{proof.batchId}</p>
+
+                <label className="text-sm font-medium text-gray-500">Resource ID</label>
+                <p>{proof.resourceId}</p>
 
                 <label className="text-sm font-medium text-gray-500">Printer Name</label>
                 <p>{proof.printerName}</p>
