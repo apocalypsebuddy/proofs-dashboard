@@ -20,8 +20,10 @@ model Proof {
   customerId   String
   printerId    String
   batchId      String
+  resourceId   String
   description  String
   customerName String
   printerName  String
-  imageUrl     String
+  printFrontUrl String
+  printBackUrl  String
 }
