@@ -13,16 +13,20 @@ type Proof = {
   id: string;
   date: string;
   batchId: string;
+  resourceId: string;
   description: string;
   customerId: string;
   customerName: string;
   printerId: string;
   printerName: string;
-  imageUrl: string;
+  printFrontUrl: string;
+  printBackUrl: string;
+  signedFrontUrl: string;
+  signedBackUrl: string;
   flagged?: boolean;
 };
 
-type TabType = 'All' | 'Flagged';
+// type TabType = 'All' | 'Flagged';
 
 // Service layer to abstract API calls
 // TODO: Move to a separate file
@@ -31,7 +35,36 @@ const proofsService = {
   async fetchProofs(): Promise<Proof[]> {
     const response = await fetch('/api/proofs');
     const data = await response.json();
-    return data.items;
+    
+    // Fetch signed URLs for each proof
+    const proofsWithSignedUrls = await Promise.all(
+      data.items.map(async (proof: Proof) => {
+        const frontKey = proof.printFrontUrl.split('/').pop();
+        const backKey = proof.printBackUrl.split('/').pop();
+
+        const [frontResponse, backResponse] = await Promise.all([
+          fetch(`/api/signed-url?key=${frontKey}`),
+          fetch(`/api/signed-url?key=${backKey}`)
+        ]);
+
+        if (!frontResponse.ok || !backResponse.ok) {
+          throw new Error('Failed to fetch signed URLs');
+        }
+
+        const [frontData, backData] = await Promise.all([
+          frontResponse.json(),
+          backResponse.json()
+        ]);
+
+        return {
+          ...proof,
+          signedFrontUrl: frontData.url,
+          signedBackUrl: backData.url
+        };
+      })
+    );
+
+    return proofsWithSignedUrls;
   },
 
   // AWS Amplify implementation (commented out for future use)
@@ -48,7 +81,7 @@ const proofsService = {
 export default function ProofsIndex() {
   const router = useRouter();
   const [proofs, setProofs] = useState<Proof[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('All');
+  // const [activeTab, setActiveTab] = useState<TabType>('All');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   useEffect(() => {
@@ -66,9 +99,12 @@ export default function ProofsIndex() {
     fetchProofs();
   }, []);
 
-  const filteredProofs = activeTab === 'All' 
-    ? proofs 
-    : proofs.filter(proof => proof.flagged);
+  const filteredProofs = proofs;
+
+    // TODO: Add filtering by tab when we have the ability to flag proofs
+    // const filteredProofs = activeTab === 'All' 
+    //   ? proofs 
+    //   : proofs.filter(proof => proof.flagged);
 
   const handleUpload = async (formData: FormData) => {
     try {
@@ -96,6 +132,7 @@ export default function ProofsIndex() {
       <div className="border-b border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Proofs</h1>
+          {/* TODO: REWRITE USING BUTTON COMPONENT */}
           <button
             onClick={() => setIsUploadOpen(true)}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
@@ -106,7 +143,8 @@ export default function ProofsIndex() {
             Upload Proof
           </button>
         </div>
-        <div className="flex space-x-4 mb-4">
+        {/* TABS FOR WHEN WE ARE ABLE TO FLAG PROOFS */}
+        {/* <div className="flex space-x-4 mb-4">
           {(['All', 'Flagged'] as TabType[]).map((tab) => (
             <button
               key={tab}
@@ -120,7 +158,7 @@ export default function ProofsIndex() {
               {tab}
             </button>
           ))}
-        </div>
+        </div> */}
       </div>
 
       <UploadProofForm
@@ -149,6 +187,10 @@ export default function ProofsIndex() {
                 <span className="text-gray-400">{proof.batchId}</span>
               </p>
               <p className="grid grid-cols-[100px_1fr] gap-2">
+                <span className="font-medium text-gray-600">Resource ID:</span>
+                <span className="text-gray-400">{proof.resourceId}</span>
+              </p>
+              <p className="grid grid-cols-[100px_1fr] gap-2">
                 <span className="font-medium text-gray-600">Description:</span>
                 <span className="text-gray-400">{proof.description}</span>
               </p>
@@ -163,13 +205,21 @@ export default function ProofsIndex() {
             </div>
 
             {/* Image Column */}
-            <div className="flex items-center justify-center">
-              <div className="relative">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="relative h-[200px] w-[200px]">
                 <Image
-                  src={proof.imageUrl}
-                  alt="Proof Preview"
+                  src={proof.signedFrontUrl}
+                  alt="Proof Image Front"
                   fill
-                  className="object-contain rounded"
+                  className="object-contain"
+                />
+              </div>
+              <div className="relative h-[200px] w-[200px]">
+                <Image
+                  src={proof.signedBackUrl}
+                  alt="Proof Image Back"
+                  fill
+                  className="object-contain"
                 />
               </div>
             </div>
