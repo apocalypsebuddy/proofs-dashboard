@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import UploadProofForm from "../components/UploadProofForm";
+import UploadForm from "../components/UploadForm";
 // import { API, graphqlOperation } from "aws-amplify";
 // import { listProofs } from "../../graphql/queries";
 
@@ -161,7 +161,7 @@ export default function ProofsIndex() {
         </div> */}
       </div>
 
-      <UploadProofForm
+      <UploadForm
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onSubmit={handleUpload}

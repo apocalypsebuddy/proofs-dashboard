@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { use } from "react";
 
 type Proof = {
   id: string;
@@ -16,20 +17,24 @@ type Proof = {
   printerName: string;
   printFrontUrl: string;
   printBackUrl: string;
+  signedFrontUrl: string;
+  signedBackUrl: string;
   flagged?: boolean;
 };
 
-export default function ProofDetail({ params }: { params: { id: string } }) {
+export default function ProofDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [proof, setProof] = useState<Proof | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signedUrls, setSignedUrls] = useState<{ front: string; back: string } | null>(null);
 
+  const { id } = use(params);
+
   useEffect(() => {
     const fetchProof = async () => {
       try {
-        const response = await fetch(`/api/proofs/${params.id}`);
+        const response = await fetch(`/api/proofs/${id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch proof');
         }
@@ -67,7 +72,7 @@ export default function ProofDetail({ params }: { params: { id: string } }) {
     };
 
     fetchProof();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
