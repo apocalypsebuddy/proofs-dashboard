@@ -82,6 +82,7 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
     );
   }
 
+  // TODO: This is a strange way to do this...
   if (error || !proof || !signedUrls) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -96,6 +97,7 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
     );
   }
 
+  // TODO: Abstract into components
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -139,23 +141,17 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
               <label className="text-sm font-medium text-gray-500">Date</label>
               <p>{new Date(proof.date).toLocaleString()}</p>
               
-              <label className="text-sm font-medium text-gray-500">Batch ID</label>
-              <p>{proof.batchId}</p>
-
               <label className="text-sm font-medium text-gray-500">Resource ID</label>
               <p>{proof.resourceId}</p>
 
+              <label className="text-sm font-medium text-gray-500">Batch ID</label>
+              <p>{proof.batchId}</p>
+
               <label className="text-sm font-medium text-gray-500">Printer Name</label>
-              <p>{proof.printerName}</p>
-             
-              <label className="text-sm font-medium text-gray-500">Printer ID</label>
-              <p>{proof.printerId}</p>
+              <p>{proof.printerName} <span className="text-gray-500 text-xs">(ID: {proof.printerId})</span></p>
              
               <label className="text-sm font-medium text-gray-500">Customer Name</label>
-              <p>{proof.customerName}</p>
-          
-              <label className="text-sm font-medium text-gray-500">Customer ID</label>
-              <p>{proof.customerId}</p>
+              <p>{proof.customerName} <span className="text-gray-500 text-xs">(ID: {proof.customerId})</span></p>
             </div>
           </div>
         </div>

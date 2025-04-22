@@ -39,15 +39,6 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
           <Dialog.Title className="text-lg font-medium mb-4">Upload New Proof</Dialog.Title>
           <form onSubmit={handleSubmit} className="space-y-4">
               <label className="block text-sm font-medium text-gray-700">
-                Resource ID
-                <input
-                  type="text"
-                  name="resourceId"
-                  required
-                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm font-medium text-gray-700">
                 Front Image
                 <input
                   type="file"
@@ -68,24 +59,6 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
                 />
               </label>
               <label className="block text-sm font-medium text-gray-700">
-                Description
-                <input
-                  type="text"
-                  name="description"
-                  required
-                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
-                />
-              </label>      
-              <label className="block text-sm font-medium text-gray-700">
-                Batch ID
-                <input
-                  type="text"
-                  name="batchId"
-                  required
-                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm font-medium text-gray-700">
                 Customer Name
                 <input
                   type="text"
@@ -99,6 +72,33 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
                 <input
                   type="text"
                   name="customerId"
+                  required
+                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+                <input
+                  type="text"
+                  name="description"
+                  required
+                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+                />
+              </label>    
+              <label className="block text-sm font-medium text-gray-700">
+                Resource ID
+                <input
+                  type="text"
+                  name="resourceId"
+                  required
+                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+                />
+              </label> 
+              <label className="block text-sm font-medium text-gray-700">
+                Batch ID
+                <input
+                  type="text"
+                  name="batchId"
                   required
                   className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
                 />

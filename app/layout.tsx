@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className="bg-gray-50 text-gray-900"
+        className="bg-gray-50 text-gray-900 mt-24"
       >
         {/* TODO: Add a header and navigation bar here */}
         {children}

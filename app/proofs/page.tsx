@@ -179,28 +179,28 @@ export default function ProofsIndex() {
             <div className="space-y-3">
               <h3 className="font-semibold text-lg mb-4 text-gray-500">Info</h3>
               <p className="grid grid-cols-[100px_1fr] gap-2">
-                <span className="font-medium text-gray-600">Date:</span>
-                <span className="text-gray-400">{new Date(proof.date).toLocaleString()}</span>
+                <span className="font-medium text-gray-600">Description:</span>
+                <span className="text-gray-400">{proof.description}</span>
               </p>
               <p className="grid grid-cols-[100px_1fr] gap-2">
-                <span className="font-medium text-gray-600">Batch ID:</span>
-                <span className="text-gray-400">{proof.batchId}</span>
+                <span className="font-medium text-gray-600">Date:</span>
+                <span className="text-gray-400">{new Date(proof.date).toLocaleString()}</span>
               </p>
               <p className="grid grid-cols-[100px_1fr] gap-2">
                 <span className="font-medium text-gray-600">Resource ID:</span>
                 <span className="text-gray-400">{proof.resourceId}</span>
               </p>
               <p className="grid grid-cols-[100px_1fr] gap-2">
-                <span className="font-medium text-gray-600">Description:</span>
-                <span className="text-gray-400">{proof.description}</span>
-              </p>
-              <p className="grid grid-cols-[100px_1fr] gap-2">
-                <span className="font-medium text-gray-600">Customer:</span>
-                <span className="text-gray-400">{proof.customerName} (ID: {proof.customerId})</span>
+                <span className="font-medium text-gray-600">Batch ID:</span>
+                <span className="text-gray-400">{proof.batchId}</span>
               </p>
               <p className="grid grid-cols-[100px_1fr] gap-2">
                 <span className="font-medium text-gray-600">Printer:</span>
                 <span className="text-gray-400">{proof.printerName} (ID: {proof.printerId})</span>
+              </p>
+              <p className="grid grid-cols-[100px_1fr] gap-2">
+                <span className="font-medium text-gray-600">Customer:</span>
+                <span className="text-gray-400">{proof.customerName} (ID: {proof.customerId})</span>
               </p>
             </div>
 
