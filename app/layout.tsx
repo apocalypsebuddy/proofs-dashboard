@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "./components/AuthProvider";
+import ConfigureAmplify from "./amplify-config";
 
 export const metadata: Metadata = {
   title: "Pudding",
@@ -13,11 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className="bg-gray-50 text-gray-900 mt-24"
-      >
-        {/* TODO: Add a header and navigation bar here */}
-        {children}
+      <body className="bg-gray-50 text-gray-900 mt-24">
+        <ConfigureAmplify />
+        <AuthProvider>
+          {/* TODO: Add a header and navigation bar here */}
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
