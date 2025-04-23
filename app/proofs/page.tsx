@@ -114,10 +114,17 @@ export default function ProofsIndex() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to upload proof');
+        // TODO: Error handling here is mostly for debugging, should handle errors so they fail gracefully
+        const errorData = await response.json();
+        console.error('Upload failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(errorData.error || 'Failed to upload proof');
       }
 
-      // Refresh the proofs list
+      // Refresh the proofs list after upload
       const data = await proofsService.fetchProofs();
       setProofs(data.sort((a: Proof, b: Proof) => (a.date < b.date ? 1 : -1)));
     } catch (error) {
