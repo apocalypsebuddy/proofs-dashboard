@@ -1,20 +1,24 @@
-import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
 
 export async function getCurrentUserInfo() {
   try {
     // Get the current authenticated user
-    const user = await getCurrentUser();
+    const { userId } = await getCurrentUser();
     
-    // Fetch user attributes which includes groups
+    // Fetch user attributes
     const attributes = await fetchUserAttributes();
     
-    // The groups are typically in the 'cognito:groups' attribute
-    const groups = attributes['cognito:groups'] || [];
+    // Get the current session to access tokens
+    const { tokens } = await fetchAuthSession();
+    
+    // Get groups from the ID token payload and ensure they're strings
+    const rawGroups = tokens?.idToken?.payload['cognito:groups'] || [];
+    const groups = (Array.isArray(rawGroups) ? rawGroups : [rawGroups])
+      .filter((group): group is string => typeof group === 'string');
     
     return {
-      user,
-      userId: user.userId,
-      groups: Array.isArray(groups) ? groups : [groups],
+      userId,
+      groups,
       attributes
     };
   } catch (error) {

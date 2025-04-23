@@ -8,7 +8,6 @@ type UserAttributes = Partial<Record<UserAttributeKey, string>>;
 
 export default function UserInfo() {
   const [userInfo, setUserInfo] = useState<{
-    user: unknown;
     userId: string;
     groups: string[];
     attributes: UserAttributes;
@@ -20,7 +19,7 @@ export default function UserInfo() {
     async function loadUserInfo() {
       try {
         const info = await getCurrentUserInfo();
-        setUserInfo(info);
+        if (info) {setUserInfo({...info});}
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load user info');
       } finally {
@@ -48,8 +47,6 @@ export default function UserInfo() {
         </ul>
         <p><strong>All Attributes:</strong></p>
         <pre className="bg-gray-100 p-2 rounded">
-          {/* {JSON.stringify(userInfo, null, 2)} */}
-          {JSON.stringify(userInfo.user, null, 2)}
           {JSON.stringify(userInfo.attributes, null, 2)}
         </pre>
       </div>
