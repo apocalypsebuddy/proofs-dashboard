@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AuthProvider from "./components/AuthProvider";
 import ConfigureAmplify from "./amplify-config";
+import Navigation from "./components/Navigation";
 
 export const metadata: Metadata = {
   title: "Pudding",
@@ -15,11 +16,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 text-gray-900 mt-24">
+      <body className="bg-gray-50 text-gray-900">
         <ConfigureAmplify />
         <AuthProvider>
-          {/* TODO: Add a header and navigation bar here */}
-          {children}
+          <Navigation />
+          <main className="mt-16">
+            {children}
+          </main>
         </AuthProvider>
       </body>
     </html>
