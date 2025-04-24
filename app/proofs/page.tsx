@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import UploadForm from "../components/UploadForm";
+import { fetchAuthSession } from 'aws-amplify/auth';
 // import { API, graphqlOperation } from "aws-amplify";
 // import { listProofs } from "../../graphql/queries";
 
@@ -26,19 +27,29 @@ type Proof = {
   flagged?: boolean;
 };
 
-// type TabType = 'All' | 'Flagged';
+type TabType = 'All' | 'Flagged';
 
 // Service layer to abstract API calls
 // TODO: Move to a separate file
 const proofsService = {
   // Local API implementation
   async fetchProofs(): Promise<Proof[]> {
-    const response = await fetch('/api/proofs');
+    const { tokens } = await fetchAuthSession();
+    const response = await fetch('/api/proofs', {
+      headers: {
+        'Authorization': `Bearer ${tokens?.accessToken?.toString()}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch proofs');
+    }
+    
     const data = await response.json();
     
     // Fetch signed URLs for each proof
     const proofsWithSignedUrls = await Promise.all(
-      data.items.map(async (proof: Proof) => {
+      data.map(async (proof: Proof) => {
         const frontKey = proof.printFrontUrl.split('/').pop();
         const backKey = proof.printBackUrl.split('/').pop();
 
@@ -67,21 +78,13 @@ const proofsService = {
     return proofsWithSignedUrls;
   },
 
-  // AWS Amplify implementation (commented out for future use)
-  /*
-  async fetchProofs(): Promise<Proof[]> {
-    const response: any = await API.graphql(
-      graphqlOperation(listProofs, {})
-    );
-    return response.data.listProofs.items;
-  }
-  */
+
 };
 
 export default function ProofsIndex() {
   const router = useRouter();
   const [proofs, setProofs] = useState<Proof[]>([]);
-  // const [activeTab, setActiveTab] = useState<TabType>('All');
+  const [activeTab, setActiveTab] = useState<TabType>('All');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   useEffect(() => {
@@ -99,13 +102,12 @@ export default function ProofsIndex() {
     fetchProofs();
   }, []);
 
-  const filteredProofs = proofs;
-
     // TODO: Add filtering by tab when we have the ability to flag proofs
-    // const filteredProofs = activeTab === 'All' 
-    //   ? proofs 
-    //   : proofs.filter(proof => proof.flagged);
+    const filteredProofs = activeTab === 'All' 
+      ? proofs 
+      : proofs.filter(proof => proof.flagged);
 
+      // TODO: Abstract this to a separate file
   const handleUpload = async (formData: FormData) => {
     try {
       const response = await fetch('/api/proofs', {
@@ -151,7 +153,7 @@ export default function ProofsIndex() {
           </button>
         </div>
         {/* TABS FOR WHEN WE ARE ABLE TO FLAG PROOFS */}
-        {/* <div className="flex space-x-4 mb-4">
+        <div className="flex space-x-4 mb-4">
           {(['All', 'Flagged'] as TabType[]).map((tab) => (
             <button
               key={tab}
@@ -165,7 +167,7 @@ export default function ProofsIndex() {
               {tab}
             </button>
           ))}
-        </div> */}
+        </div>
       </div>
 
       <UploadForm
