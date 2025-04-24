@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
-import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { headers } from 'next/headers';
-import { jwtDecode } from "jwt-decode";
+import { getUserIdentityFromToken } from '@/app/utils/auth';
 
 const prisma = new PrismaClient();
 const s3Client = new S3Client({
-  region: 'us-west-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-const cognitoClient = new CognitoIdentityProviderClient({
   region: 'us-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -26,61 +17,29 @@ export async function GET() {
   try {
     const headersList = await headers();
     const authHeader = headersList.get('authorization');
-
+    
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const token = authHeader.split(' ')[1];
     
-    // Get user info from Cognito
-    const command = new GetUserCommand({
-      AccessToken: token,
-    });
-
-    
-
-    type TokenPayload = {
-      "cognito:groups"?: string[];
-      [claim: string]: unknown;
-    };
-
-    const idToken = token;
-    const payload = jwtDecode<TokenPayload>(idToken);
-    console.log("Payload:", payload);
-    console.log("payload.sub:", payload.sub);
-    console.log("Groups from token:", payload["cognito:groups"]);
-
     try {
-      const { Username, UserAttributes } = await cognitoClient.send(command);
-      
-      console.log('User info:', {
-        username: Username,
-        attributes: UserAttributes
-      });
-      
-      // Get user's groups from attributes
-      const isSuperadmin = payload["cognito:groups"]?.includes('superadmin');
-      const isCustomer = payload["cognito:groups"]?.includes('customer');
-      const isPrinter = payload["cognito:groups"]?.includes('printer');
-
-      console.log('User roles:', {
-        isSuperadmin,
-        isCustomer,
-        isPrinter
-      });
-
       // Build the where clause based on user's role
+      const token = authHeader.split(' ')[1];
+      const { userId, group } = await getUserIdentityFromToken(token);
+
       let where = {};
-      if (!isSuperadmin) {
-        if (isCustomer) {
-          where = { customerId: Username };
-        } else if (isPrinter) {
-          where = { printerId: Username };
-        } else {
-          console.log('User has no valid role');
+      switch (group) {
+        case 'superadmin':
+          where = {};
+          break;
+        case 'customer':
+          where = { customerId: userId };
+          break;
+        case 'printer':
+          where = { printerId: userId };
+          break;
+        default:
           return NextResponse.json({ error: 'Unauthorized - No valid role' }, { status: 403 });
-        }
       }
 
       const proofs = await prisma.proof.findMany({
@@ -89,8 +48,6 @@ export async function GET() {
           date: 'desc'
         }
       });
-
-      console.log('Found proofs:', proofs.length);
 
       return NextResponse.json(proofs);
     } catch (error) {
@@ -147,6 +104,7 @@ export async function POST(request: Request) {
     }));
 
     // Create proof record in database
+    // setting the URLs like that for now but it's weird
     const proof = await prisma.proof.create({
       data: {
         description,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { CognitoIdentityProviderClient, ListUsersInGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
 
+// This endpoint is only used to populate the customer dropdown on the upload form
 export async function GET() {
   try {
     const cognitoClient = new CognitoIdentityProviderClient({
