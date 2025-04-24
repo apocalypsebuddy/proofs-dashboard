@@ -26,10 +26,10 @@ export async function getCurrentUserInfo() {
 }
 
 // This is used by the API to get the user's identity from the bearertoken
-// Having trouble getting API routes to use Amplify auth, so using this for now
+// The token only contains the userId, userName, and groups. not any other user attributes
 export async function getUserIdentityFromToken(token: string) {
   const payload = jwtDecode<TokenPayload>(token);
-
+  console.log('payload', payload);
   return {
     userId: payload.sub,
     username: payload.username,

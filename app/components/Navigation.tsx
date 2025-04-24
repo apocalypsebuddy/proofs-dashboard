@@ -2,9 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getCurrentUserInfo } from '@/app/utils/auth';
+import { useEffect, useState } from 'react';
+import { UserAttributeKey } from 'aws-amplify/auth';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const [userAttributes, setUserAttributes] = useState<Partial<Record<UserAttributeKey, string>>>({});
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const userInfo = await getCurrentUserInfo();
+      setUserAttributes(userInfo?.attributes || {});
+    };  
+    fetchUserInfo();
+  }, []);
 
   return (
     <nav className="bg-white shadow-sm">
@@ -32,6 +44,12 @@ export default function Navigation() {
               Account
             </Link>
           </div>
+          {userAttributes.name && (
+            <div className="flex items-center text-gray-600">
+              <span className="text-sm font-medium">{userAttributes.name}</span>
+              <span className="text-sm font-small">({userAttributes.email})</span>
+            </div>
+          )}
         </div>
       </div>
     </nav>
