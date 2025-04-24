@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import UploadForm from "../components/UploadForm";
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { getCurrentUserInfo } from '@/app/utils/auth';
 // import { API, graphqlOperation } from "aws-amplify";
 // import { listProofs } from "../../graphql/queries";
 
@@ -32,7 +33,7 @@ type TabType = 'All' | 'Flagged';
 // Service layer to abstract API calls
 // TODO: Move to a separate file
 const proofsService = {
-  // Local API implementation
+  // This layer adds presigned URLs to the proofs instead of a direct fetch
   async fetchProofs(): Promise<Proof[]> {
     const { tokens } = await fetchAuthSession();
     const response = await fetch('/api/proofs', {
@@ -77,37 +78,45 @@ const proofsService = {
 
     return proofsWithSignedUrls;
   },
-
-
 };
+
 
 export default function ProofsIndex() {
   const router = useRouter();
   const [proofs, setProofs] = useState<Proof[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [userGroups, setUserGroups] = useState<string[]>([]);
+
+  const fetchUserInfo = async () => {
+    try {
+      const userInfo = await getCurrentUserInfo();
+      setUserGroups(userInfo?.groups || []);
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+    }
+  };
+
+  const fetchProofs = async () => {
+    try {
+      const data = await proofsService.fetchProofs();
+      // Sort by date descending (newest first)
+      setProofs(data);
+    } catch (error) {
+      console.error("Error fetching proofs:", error);
+    }
+  };
 
   useEffect(() => {
-    // TODO: Move to a separate file
-    const fetchProofs = async () => {
-      try {
-        const data = await proofsService.fetchProofs();
-        // Sort by date descending (newest first)
-        setProofs(data.sort((a: Proof, b: Proof) => (a.date < b.date ? 1 : -1)));
-      } catch (error) {
-        console.error("Error fetching proofs:", error);
-      }
-    };
-
+    fetchUserInfo();
     fetchProofs();
   }, []);
 
-    // TODO: Add filtering by tab when we have the ability to flag proofs
-    const filteredProofs = activeTab === 'All' 
-      ? proofs 
-      : proofs.filter(proof => proof.flagged);
+  const filteredProofs = activeTab === 'All' 
+    ? proofs 
+    : proofs.filter(proof => proof.flagged);
 
-      // TODO: Abstract this to a separate file
+  // TODO: Move this to proofsService
   const handleUpload = async (formData: FormData) => {
     try {
       const response = await fetch('/api/proofs', {
@@ -128,7 +137,7 @@ export default function ProofsIndex() {
 
       // Refresh the proofs list after upload
       const data = await proofsService.fetchProofs();
-      setProofs(data.sort((a: Proof, b: Proof) => (a.date < b.date ? 1 : -1)));
+      setProofs(data);
     } catch (error) {
       console.error('Error uploading proof:', error);
       throw error;
@@ -141,16 +150,18 @@ export default function ProofsIndex() {
       <div className="border-b border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Proofs</h1>
-          {/* TODO: REWRITE USING BUTTON COMPONENT */}
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            Upload Proof
-          </button>
+          {/* Only show upload button if user is not in customer group */}
+          {!userGroups.includes('customer') && (
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Upload Proof
+            </button>
+          )}
         </div>
         {/* TABS FOR WHEN WE ARE ABLE TO FLAG PROOFS */}
         <div className="flex space-x-4 mb-4">

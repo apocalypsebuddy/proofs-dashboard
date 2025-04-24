@@ -18,10 +18,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     },
   };
   return (
-    <div className="flex justify-center items-center h-screen">
       <Authenticator hideSignUp formFields={formFields}>
         {children}
       </Authenticator>
-    </div>
   );
 }
