@@ -1,4 +1,3 @@
-// app/proofs/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,8 +6,6 @@ import Image from "next/image";
 import UploadForm from "../components/UploadForm";
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { getCurrentUserInfo } from '@/app/utils/auth';
-// import { API, graphqlOperation } from "aws-amplify";
-// import { listProofs } from "../../graphql/queries";
 
 // TODO: Move to a separate file
 type Proof = {
@@ -31,9 +28,9 @@ type Proof = {
 type TabType = 'All' | 'Flagged';
 
 // Service layer to abstract API calls
+// This layer adds presigned URLs to the proofs instead of a direct fetch
 // TODO: Move to a separate file
 const proofsService = {
-  // This layer adds presigned URLs to the proofs instead of a direct fetch
   async fetchProofs(): Promise<Proof[]> {
     const { tokens } = await fetchAuthSession();
     const response = await fetch('/api/proofs', {
@@ -100,7 +97,6 @@ export default function ProofsIndex() {
   const fetchProofs = async () => {
     try {
       const data = await proofsService.fetchProofs();
-      // Sort by date descending (newest first)
       setProofs(data);
     } catch (error) {
       console.error("Error fetching proofs:", error);
