@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { use } from "react";
+import { getCurrentUserInfo } from '@/app/utils/auth';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 type Proof = {
   id: string;
@@ -28,8 +30,15 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signedUrls, setSignedUrls] = useState<{ front: string; back: string } | null>(null);
+  const [userGroups, setUserGroups] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { id } = use(params);
+
+  const fetchUserInfo = async () => {
+      const userInfo = await getCurrentUserInfo();
+      setUserGroups(userInfo?.groups || []);
+  };
 
   useEffect(() => {
     const fetchProof = async () => {
@@ -71,8 +80,40 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
       }
     };
 
+    fetchUserInfo();
     fetchProof();
   }, [id]);
+
+  const handleDelete = async () => {
+    // TODO: I'm not big on using the window object, but I don't want to build a modal right now
+    if (!window.confirm('Are you sure you want to delete this proof?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { tokens } = await fetchAuthSession();
+      if (!tokens?.accessToken) {
+        throw new Error('No access token available');
+      }
+
+      const response = await fetch(`/api/proofs/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${tokens.accessToken.toString()}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete proof');
+      }
+
+      router.push('/proofs');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete proof');
+      setIsDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -82,7 +123,6 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
     );
   }
 
-  // TODO: This is a strange way to do this...
   if (error || !proof || !signedUrls) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -102,12 +142,12 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Proof Details</h1>
-        <button
-          onClick={() => router.push('/proofs')}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-        >
-          Back to Proofs
-        </button>
+          <button
+            onClick={() => router.push('/proofs')}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          >
+            Back to Proofs
+          </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -154,6 +194,17 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
               <p>{proof.customerName} <span className="text-gray-500 text-xs">(ID: {proof.customerId})</span></p>
             </div>
           </div>
+          {!userGroups.includes('customer') && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Proof'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

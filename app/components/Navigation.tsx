@@ -9,12 +9,12 @@ import { UserAttributeKey } from 'aws-amplify/auth';
 export default function Navigation() {
   const pathname = usePathname();
   const [userAttributes, setUserAttributes] = useState<Partial<Record<UserAttributeKey, string>>>({});
-
+  const fetchUserInfo = async () => {
+    const userInfo = await getCurrentUserInfo();
+    setUserAttributes(userInfo?.attributes || {});
+  };  
+  
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      const userInfo = await getCurrentUserInfo();
-      setUserAttributes(userInfo?.attributes || {});
-    };  
     fetchUserInfo();
   }, []);
 
