@@ -81,9 +81,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Resource ID is required' }, { status: 400 });
     }
 
-    // Generate S3 keys using provided resourceId
-    const frontKey = `${resourceId}_thumb_large_1.png`;
-    const backKey = `${resourceId}_thumb_large_2.png`;
+    // Generate unique S3 keys using provided resourceId
+    const frontKey = `${resourceId}_${Date.now().toString()}`;
+    const backKey = `${resourceId}_${Date.now().toString()}`;
 
     // Upload front image to S3
     const frontBuffer = Buffer.from(await frontImage.arrayBuffer());

@@ -65,6 +65,7 @@ npx prisma generate
 npx prisma migrate dev
 
 # Populate the database with dummy data
+# The Urls attributes of the dummy proofs rely on those objects existing in S3 as .png files
 npx ts-node scripts/generateDummyData.ts
 ```
 

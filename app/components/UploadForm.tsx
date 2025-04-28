@@ -114,7 +114,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
   };
 
   if (loading) {
-    return <div>Loading form data...</div>;
+    return <div></div>;
   }
 
   return (

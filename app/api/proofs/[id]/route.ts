@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { dummyData } from '@/scripts/generateDummyData.mjs';
 
 const prisma = new PrismaClient();
 const s3Client = new S3Client({
@@ -46,21 +47,30 @@ export async function DELETE(
       return NextResponse.json({ error: 'Proof not found' }, { status: 404 });
     }
 
-    // Delete images from S3
+    // We're using the S3 URLs to delete by key
+    // Maybe we should be store the keys in the database instead?
     const frontKey = proof.printFrontUrl.split('/').pop();
     const backKey = proof.printBackUrl.split('/').pop();
 
+    // 
+
     if (frontKey && backKey) {
-      await Promise.all([
-        s3Client.send(new DeleteObjectCommand({
-          Bucket: 'proofs-dashboard-dev',
+      // Don't delete the S3 objects if the URLs are from the dummy data
+      // Maybe this shouldn't be hardcoded like this, what's the worst that could happen?
+      if (dummyData.some(p => p.printFrontUrl === proof.printFrontUrl && p.printBackUrl === proof.printBackUrl)) {
+        console.log('Skipping deletion of dummy data');
+      } else {
+        await Promise.all([
+          s3Client.send(new DeleteObjectCommand({
+            Bucket: 'proofs-dashboard-dev',
           Key: frontKey,
         })),
         s3Client.send(new DeleteObjectCommand({
-          Bucket: 'proofs-dashboard-dev',
-          Key: backKey,
-        }))
-      ]);
+            Bucket: 'proofs-dashboard-dev',
+            Key: backKey,
+          }))
+        ]);
+      }
     }
 
     // Delete proof from database

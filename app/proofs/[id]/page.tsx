@@ -192,6 +192,21 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
              
               <label className="text-sm font-medium text-gray-500">Customer Name</label>
               <p>{proof.customerName} <span className="text-gray-500 text-xs">(ID: {proof.customerId})</span></p>
+
+              {/* <label className="text-sm font-medium text-gray-500">Flagged</label>
+              <p>{proof.flagged ? 'Yes' : 'No'}</p> */}
+
+              {/* Only show the URLs if the user is a superadmin */}
+              {userGroups.includes('superadmin') && (
+              <>
+                <label className="text-md font-medium text-gray-500">Admin:</label> <br />
+                <label className="text-sm font-medium text-gray-500">Print Front URL</label>
+                <p className="text-xs">{proof.printFrontUrl}</p>
+
+                <label className="text-sm font-medium text-gray-500">Print Back URL</label>
+                <p className="text-xs">{proof.printBackUrl}</p>  
+              </>
+              )}
             </div>
           </div>
           {!userGroups.includes('customer') && (
