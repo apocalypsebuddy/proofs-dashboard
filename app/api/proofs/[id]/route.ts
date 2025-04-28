@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { dummyData } from '@/scripts/generateDummyData.mjs';
+import { dummyData } from '@/scripts/dummyData.mjs';
 
 const prisma = new PrismaClient();
 const s3Client = new S3Client({
