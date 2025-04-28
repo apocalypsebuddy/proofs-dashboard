@@ -9,6 +9,9 @@
     "lint": "next lint",
     "postinstall": "prisma generate"
   },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
   "dependencies": {
     "@aws-amplify/adapter-nextjs": "^1.6.1",
     "@aws-amplify/ui-react": "^6.11.0",
