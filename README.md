@@ -10,6 +10,8 @@ A Next.js application for managing and viewing print proofs.
 
 ## Getting Started
 
+Make sure your VPN (Pritunl or Cloudfare) is turned off, as localhost uses self signed certificates and this will cause issues when installing dependencies and fetching from AWS.
+
 ### 1. Install PostgreSQL
 
 #### macOS (using Homebrew)
@@ -18,22 +20,19 @@ A Next.js application for managing and viewing print proofs.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install PostgreSQL
-brew install postgresql@15
+brew install postgresql
 
 # Start PostgreSQL service
-brew services start postgresql@15
+brew services start postgresql
 ```
+If you installed postgres previously using another installer, you may need to use `brew install` and `brew services start` so the ports are found successfully and you don't run into user permission issues
 
 ### 2. Set Up the Database
 
 ```bash
-# after running 'brew services start postgres'
+# Create the database (this will use your system username as the PostgreSQL user)
 createdb proofs_dashboard
 
-# Or instead using psql
-psql -U postgres
-CREATE DATABASE proofs_dashboard;
-\q
 ```
 
 ### 3. Clone and Set Up the Project
@@ -50,15 +49,19 @@ npm install
 cp .env.example .env
 ```
 
-Edit the `.env` file with your database credentials:
+Edit the `.env` file with actual environment variable. When using homebrew to run postgres, the DATABASE_URL should use your system username:
 ```
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/proofs_dashboard"
+# Get your system username
+whoami
+
+# Use that username in your DATABASE connection in .env
+DATABASE_URL="postgresql://{user}:postgres@localhost:5432/proofs_dashboard"
 ```
 
 ### 4. Initialize the Database
 
 ```bash
-# Generate Prisma client
+# Generate Prisma client (will get warning about output path, fixing this is future release)
 npx prisma generate
 
 # Run database migrations
@@ -66,7 +69,7 @@ npx prisma migrate dev
 
 # Populate the database with dummy data
 # The Urls attributes of the dummy proofs rely on those objects existing in S3 as .png files
-npx ts-node scripts/generateDummyData.ts
+node scripts/generateDummyData.mjs
 ```
 
 ### 5. Start the Development Server
@@ -76,6 +79,8 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+
+You will need to login with your provisioned creds, you will be prompted to reset your password.
 
 ## Project Structure
 
@@ -114,6 +119,8 @@ The following environment variables are required:
 - Ensure PostgreSQL is running
 - Verify database credentials in `.env`
 - Check if the database exists
+- If you see "User postgres was denied access" error, make sure you're using your system username in the DATABASE_URL
+- If using postgres.app, the username is likely 'postgres'
 
 ### Node.js Version Issues
 - Use `nvm` to manage Node.js versions
