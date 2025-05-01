@@ -1,17 +1,11 @@
 import { NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { s3Client } from '@/lib/awsClients';
 import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
 import { getUserIdentityFromToken } from '@/app/utils/auth';
 
 const prisma = new PrismaClient();
-const s3Client = new S3Client({
-  region: 'us-west-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
 
 export async function GET() {
   try {

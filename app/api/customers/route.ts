@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server';
-import { CognitoIdentityProviderClient, ListUsersInGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { ListUsersInGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { cognitoClient } from '@/lib/awsClients';
 
 // This endpoint is only used to populate the customer dropdown on the upload form
 export async function GET() {
   try {
-    const cognitoClient = new CognitoIdentityProviderClient({
-      region: 'us-west-2',
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-      },
-    });
-
     const command = new ListUsersInGroupCommand({
       UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
       // Filter: 'cognito:user_status = "CONFIRMED"',

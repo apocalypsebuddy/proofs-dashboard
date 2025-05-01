@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { s3Client } from '@/lib/awsClients';
 import { dummyData } from '@/scripts/dummyData.mjs';
 
 const prisma = new PrismaClient();
-const s3Client = new S3Client({
-  region: 'us-west-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
 
 export async function GET(
   request: Request,
