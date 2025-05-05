@@ -76,8 +76,9 @@ export async function POST(request: Request) {
     }
 
     // Generate unique S3 keys using provided resourceId
-    const frontKey = `${resourceId}_front_${Date.now().toString()}`;
-    const backKey = `${resourceId}_back_${Date.now().toString()}`;
+    const uploadDate = Date.now().toString();
+    const frontKey = `${resourceId}_front_${uploadDate}`;
+    const backKey = `${resourceId}_back_${uploadDate}`;
 
     // Upload front image to S3
     const frontBuffer = Buffer.from(await frontImage.arrayBuffer());
