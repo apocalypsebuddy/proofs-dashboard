@@ -146,8 +146,8 @@ export default function ProofsIndex() {
       <div className="border-b border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Proofs</h1>
-          {/* Only show upload button if user is not in customer group */}
-          {!userGroups.includes('customer') && (
+          {/* Only show upload button if user is in printer group */}
+          {userGroups.includes('printer') && (
             <button
               onClick={() => setIsUploadOpen(true)}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
@@ -177,11 +177,14 @@ export default function ProofsIndex() {
         </div>
       </div>
 
-      <UploadForm
-        isOpen={isUploadOpen}
-        onClose={() => setIsUploadOpen(false)}
-        onSubmit={handleUpload}
-      />
+      {/* only show upload form if user is in printer group */}
+      {userGroups.includes('printer') && (
+        <UploadForm
+          isOpen={isUploadOpen}
+          onClose={() => setIsUploadOpen(false)}
+          onSubmit={handleUpload}
+        />
+      )}
 
       {/* Proofs List */}
       <div className="space-y-4">
@@ -210,14 +213,20 @@ export default function ProofsIndex() {
                 <span className="font-medium text-gray-600">Batch ID:</span>
                 <span className="text-gray-400">{proof.batchId}</span>
               </p>
-              <p className="grid grid-cols-[100px_1fr] gap-2">
-                <span className="font-medium text-gray-600">Printer:</span>
-                <span className="text-gray-400">{proof.printerName} (ID: {proof.printerId})</span>
-              </p>
-              <p className="grid grid-cols-[100px_1fr] gap-2">
-                <span className="font-medium text-gray-600">Customer:</span>
-                <span className="text-gray-400">{proof.customerName} (ID: {proof.customerId})</span>
-              </p>
+              {/* only show printer info if user is superadmin */}
+              {userGroups.includes('superadmin') && (
+                <p className="grid grid-cols-[100px_1fr] gap-2">
+                  <span className="font-medium text-gray-600">Printer:</span>
+                  <span className="text-gray-400">{proof.printerName} (ID: {proof.printerId})</span>
+                </p>
+              )}
+              {/* only show customer info if user is superadmin or printer */}
+              {(userGroups.includes('superadmin') || userGroups.includes('printer')) && (
+                <p className="grid grid-cols-[100px_1fr] gap-2">
+                  <span className="font-medium text-gray-600">Customer:</span>
+                  <span className="text-gray-400">{proof.customerName} (ID: {proof.customerId})</span>
+                </p>
+              )}
             </div>
 
             {/* Image Column */}

@@ -32,4 +32,4 @@ export async function GET() {
     console.error('Error fetching customers:', error);
     return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
   }
-} 
+}

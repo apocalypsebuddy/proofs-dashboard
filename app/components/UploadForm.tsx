@@ -195,7 +195,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
 
             <div>
               <label htmlFor="frontImage" className="block text-sm font-medium text-gray-700">
-                Front Image
+                Front/Inside Image
               </label>
               <input
                 type="file"
@@ -209,7 +209,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
 
             <div>
               <label htmlFor="backImage" className="block text-sm font-medium text-gray-700">
-                Back Image
+                Back/Outside Image (with address block)
               </label>
               <input
                 type="file"

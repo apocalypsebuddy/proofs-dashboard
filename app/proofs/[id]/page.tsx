@@ -187,11 +187,21 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
               <label className="text-sm font-medium text-gray-500">Batch ID</label>
               <p>{proof.batchId}</p>
 
-              <label className="text-sm font-medium text-gray-500">Printer Name</label>
-              <p>{proof.printerName} <span className="text-gray-500 text-xs">(ID: {proof.printerId})</span></p>
+              {/* only show printer info if user is superadmin */}
+              {userGroups.includes('superadmin') && (
+                <>
+                  <label className="text-sm font-medium text-gray-500">Printer Name</label>
+                  <p>{proof.printerName} <span className="text-gray-500 text-xs">(ID: {proof.printerId})</span></p>
+                </>
+              )}
              
-              <label className="text-sm font-medium text-gray-500">Customer Name</label>
-              <p>{proof.customerName} <span className="text-gray-500 text-xs">(ID: {proof.customerId})</span></p>
+              {/* only show customer info if user is superadmin or printer */}
+              {(userGroups.includes('superadmin') || userGroups.includes('printer')) && (
+                <>
+                  <label className="text-sm font-medium text-gray-500">Customer Name</label>
+                  <p>{proof.customerName} <span className="text-gray-500 text-xs">(ID: {proof.customerId})</span></p>
+                </>
+              )}
 
               {/* <label className="text-sm font-medium text-gray-500">Flagged</label>
               <p>{proof.flagged ? 'Yes' : 'No'}</p> */}
