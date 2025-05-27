@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { getCurrentUserInfo } from '@/app/utils/auth';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import ImageViewer from '@/app/components/ImageViewer';
 
 type Proof = {
   id: string;
@@ -154,19 +154,17 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
         {/* Image Section */}
         <div className="space-y-4">
           <div className="relative h-[400px]">
-            <Image
+            <ImageViewer
               src={signedUrls.front}
               alt="Proof Image Front"
-              fill
-              className="object-contain"
+              className="h-full"
             />
           </div>
           <div className="relative h-[400px]">
-            <Image
+            <ImageViewer
               src={signedUrls.back}
               alt="Proof Image Back"
-              fill
-              className="object-contain"
+              className="h-full"
             />
           </div>
         </div>

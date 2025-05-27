@@ -231,7 +231,7 @@ export default function ProofsIndex() {
 
             {/* Image Column */}
             <div className="flex items-center justify-center space-x-4">
-              <div className="relative h-[200px] w-[200px]">
+              <div className="relative h-[300px] w-[300px]">
                 <Image
                   src={proof.signedFrontUrl}
                   alt="Proof Image Front"
@@ -239,7 +239,7 @@ export default function ProofsIndex() {
                   className="object-contain"
                 />
               </div>
-              <div className="relative h-[200px] w-[200px]">
+              <div className="relative h-[300px] w-[300px]">
                 <Image
                   src={proof.signedBackUrl}
                   alt="Proof Image Back"
