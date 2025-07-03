@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,15 +8,15 @@ datasource db {
 }
 
 model Proof {
-  id           String   @id @default(uuid())
-  date         DateTime @default(now())
-  customerId   String
-  printerId    String
-  batchId      String
-  resourceId   String
-  description  String
-  customerName String
-  printerName  String
-  printFrontUrl String
-  printBackUrl  String
+  id             String   @id @default(uuid())
+  date           DateTime @default(now())
+  customerId     String
+  printerId      String
+  batchId        String
+  description    String
+  customerName   String
+  printerName    String
+  printBackUrl   String?
+  printFrontUrl  String?
+  resourceId     String
 }
