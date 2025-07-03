@@ -22,6 +22,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -32,6 +33,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
           throw new Error('Failed to fetch customers');
         }
         const customersList = await response.json();
+        // console.log('customersList', customersList);
         setCustomers(customersList);
 
         // Load current user info for printer details
@@ -54,6 +56,65 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
 
     loadData();
   }, []);
+
+  const handleImageProcess = async (file: File) => {
+    setProcessingImage(true);
+    setError(null);
+    
+    // TODO: abstract this into a component
+    // ex: processImageApi(formData)
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/process-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to process image');
+      }
+      
+      const data = await response.json();
+      console.log('processedImageData', data);
+      
+      // Auto-populate form fields
+      // document.getElementById works for now vs using setState or something
+      const resourceIdInput = document.getElementById('resourceId') as HTMLInputElement;
+      const batchIdInput = document.getElementById('batchId') as HTMLInputElement;
+      const descriptionInput = document.getElementById('description') as HTMLInputElement;
+      
+      if (resourceIdInput) resourceIdInput.value = data.resourceId;
+      if (batchIdInput) batchIdInput.value = data.batchId;
+      
+      // Auto-select customer if it matches
+      const matchingCustomer = customers.find(c => c.id === data.customerId);
+      if (matchingCustomer) {
+        setSelectedCustomer(matchingCustomer);
+      }
+      
+      // Auto-populate description field
+      // This is a bit unnecessary but it's fun
+      let resourceType : string = '';
+      if (data.resourceId.includes('sfm')) {
+        resourceType = 'Self Mailer';
+      } else if (data.resourceId.includes('psc')) {
+        resourceType = 'Postcard';
+      };
+      const autoDescription = `${data.customerName} ${resourceType}`;
+      if (descriptionInput && descriptionInput.value === '') {
+        descriptionInput.value = autoDescription;
+      }
+      // End unnecessary auto-population
+      
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setError(error instanceof Error ? error.message : 'Failed to process image');
+    } finally {
+      setProcessingImage(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,6 +143,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
         description: formData.get('description'),
         frontImage: formData.get('frontImage'),
         backImage: formData.get('backImage'),
+        uploadedImage: formData.get('dataImage'),
       });
 
       try {
@@ -117,6 +179,8 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
     return <div></div>;
   }
 
+  // TODO: abstract this into a component
+  // return ( <UploadForm /> )
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -194,31 +258,28 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             </div>
 
             <div>
-              <label htmlFor="frontImage" className="block text-sm font-medium text-gray-700">
-                Front/Inside Image
+              <label htmlFor="dataImage" className="block text-sm font-medium text-gray-700">
+                Upload Image
               </label>
               <input
                 type="file"
-                id="frontImage"
-                name="frontImage"
+                id="dataImage"
+                name="dataImage"
                 accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleImageProcess(file);
+                  }
+                }}
                 className="mt-1 block w-full"
                 required
               />
-            </div>
-
-            <div>
-              <label htmlFor="backImage" className="block text-sm font-medium text-gray-700">
-                Back/Outside Image (with address block)
-              </label>
-              <input
-                type="file"
-                id="backImage"
-                name="backImage"
-                accept="image/*"
-                className="mt-1 block w-full"
-                required
-              />
+              {processingImage && (
+                <div className="mt-2 text-sm text-blue-600">
+                  Processing image...
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">

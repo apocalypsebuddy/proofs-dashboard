@@ -41,13 +41,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Proof not found' }, { status: 404 });
     }
 
-    // We're using the S3 URLs to delete by key
-    // Maybe we should be store the keys in the database instead?
-    const frontKey = proof.printFrontUrl.split('/').pop();
-    const backKey = proof.printBackUrl.split('/').pop();
+    // frontKey and backKey are the old fields that we're not using anymore
+    // dataImageS3Key is the new field that we're using
+    const frontKey = proof.printFrontUrl?.split('/')?.pop();
+    const backKey = proof.printBackUrl?.split('/')?.pop();
+    const dataImageS3Key = proof.dataImageS3Key?.split('/')?.pop();
 
-    // 
+    if (dataImageS3Key) {
+      await s3Client.send(new DeleteObjectCommand({
+        Bucket: 'proofs-dashboard-dev',
+        Key: dataImageS3Key,
+      }));
+    }
 
+    // This shouldn't hit anymore since we're not using the old fields
+    // Still preserving for now so the the old mock proofs stick around
     if (frontKey && backKey) {
       // Don't delete the S3 objects if the URLs are from the dummy data
       // Maybe this shouldn't be hardcoded like this, what's the worst that could happen?

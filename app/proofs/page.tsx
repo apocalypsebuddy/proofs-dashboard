@@ -18,10 +18,12 @@ type Proof = {
   customerName: string;
   printerId: string;
   printerName: string;
-  printFrontUrl: string;
-  printBackUrl: string;
-  signedFrontUrl: string;
-  signedBackUrl: string;
+  printFrontUrl?: string | null;
+  printBackUrl?: string | null;
+  dataImageS3Key?: string | null;
+  signedFrontUrl?: string;
+  signedBackUrl?: string;
+  signedDataImageUrl?: string;
   flagged?: boolean;
 };
 
@@ -48,27 +50,55 @@ const proofsService = {
     // Fetch signed URLs for each proof
     const proofsWithSignedUrls = await Promise.all(
       data.map(async (proof: Proof) => {
-        const frontKey = proof.printFrontUrl.split('/').pop();
-        const backKey = proof.printBackUrl.split('/').pop();
+        const signedUrls: { signedFrontUrl?: string; signedBackUrl?: string; signedDataImageUrl?: string } = {};
 
-        const [frontResponse, backResponse] = await Promise.all([
-          fetch(`/api/signed-url?key=${frontKey}`),
-          fetch(`/api/signed-url?key=${backKey}`)
-        ]);
-
-        if (!frontResponse.ok || !backResponse.ok) {
-          throw new Error('Failed to fetch signed URLs');
+        // Handle legacy front/back URLs if they exist
+        if (proof.printFrontUrl) {
+          const frontKey = proof.printFrontUrl.split('/').pop();
+          if (frontKey) {
+            try {
+              const frontResponse = await fetch(`/api/signed-url?key=${frontKey}`);
+              if (frontResponse.ok) {
+                const frontData = await frontResponse.json();
+                signedUrls.signedFrontUrl = frontData.url;
+              }
+            } catch (error) {
+              console.error('Failed to get signed URL for front image:', error);
+            }
+          }
         }
 
-        const [frontData, backData] = await Promise.all([
-          frontResponse.json(),
-          backResponse.json()
-        ]);
+        if (proof.printBackUrl) {
+          const backKey = proof.printBackUrl.split('/').pop();
+          if (backKey) {
+            try {
+              const backResponse = await fetch(`/api/signed-url?key=${backKey}`);
+              if (backResponse.ok) {
+                const backData = await backResponse.json();
+                signedUrls.signedBackUrl = backData.url;
+              }
+            } catch (error) {
+              console.error('Failed to get signed URL for back image:', error);
+            }
+          }
+        }
+
+        // Handle new dataImageS3Key if it exists
+        if (proof.dataImageS3Key) {
+          try {
+            const dataImageResponse = await fetch(`/api/signed-url?key=${proof.dataImageS3Key}`);
+            if (dataImageResponse.ok) {
+              const dataImageData = await dataImageResponse.json();
+              signedUrls.signedDataImageUrl = dataImageData.url;
+            }
+          } catch (error) {
+            console.error('Failed to get signed URL for data image:', error);
+          }
+        }
 
         return {
           ...proof,
-          signedFrontUrl: frontData.url,
-          signedBackUrl: backData.url
+          ...signedUrls
         };
       })
     );
@@ -160,6 +190,7 @@ export default function ProofsIndex() {
           )}
         </div>
         {/* TABS FOR WHEN WE ARE ABLE TO FLAG PROOFS */}
+        {/* TODO: Make this into a pretty component and move this to a separate component */}
         <div className="flex space-x-4 mb-4">
           {(['All', 'Flagged'] as TabType[]).map((tab) => (
             <button
@@ -231,22 +262,45 @@ export default function ProofsIndex() {
 
             {/* Image Column */}
             <div className="flex items-center justify-center space-x-4">
-              <div className="relative h-[300px] w-[300px]">
-                <Image
-                  src={proof.signedFrontUrl}
-                  alt="Proof Image Front"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div className="relative h-[300px] w-[300px]">
-                <Image
-                  src={proof.signedBackUrl}
-                  alt="Proof Image Back"
-                  fill
-                  className="object-contain"
-                />
-              </div>
+              {/* if dataImageS3Key exists, show that image, otherwise show front image and back image */}
+              {proof.dataImageS3Key && proof.signedDataImageUrl ? (
+                <div className="relative h-[300px] w-[300px]">
+                  <Image
+                    src={proof.signedDataImageUrl}
+                    alt="Proof Image"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              ) : ( 
+                <>
+                  {proof.signedFrontUrl && (
+                    <div className="relative h-[300px] w-[300px]">
+                      <Image
+                        src={proof.signedFrontUrl}
+                        alt="Proof Image Front"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  )}
+                  {proof.signedBackUrl && (
+                    <div className="relative h-[300px] w-[300px]">
+                      <Image
+                        src={proof.signedBackUrl}
+                        alt="Proof Image Back"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  )}
+                  {!proof.signedFrontUrl && !proof.signedBackUrl && !proof.signedDataImageUrl && (
+                    <div className="h-[300px] w-[300px] flex items-center justify-center bg-gray-100 rounded">
+                      <span className="text-gray-500">No image available</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         ))}
