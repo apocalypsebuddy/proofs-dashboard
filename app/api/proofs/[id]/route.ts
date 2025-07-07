@@ -16,6 +16,7 @@ export async function GET(
       where: { id },
     });
 
+    console.log('proof', proof);
     if (!proof) {
       return NextResponse.json({ error: 'Proof not found' }, { status: 404 });
     }

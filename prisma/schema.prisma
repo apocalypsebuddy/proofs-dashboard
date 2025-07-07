@@ -19,4 +19,5 @@ model Proof {
   printBackUrl   String?
   printFrontUrl  String?
   resourceId     String
+  dataImageS3Key String?
 }

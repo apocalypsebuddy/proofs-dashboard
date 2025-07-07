@@ -143,7 +143,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
         description: formData.get('description'),
         frontImage: formData.get('frontImage'),
         backImage: formData.get('backImage'),
-        uploadedImage: formData.get('dataImage'),
+        dataImage: formData.get('dataImage'),
       });
 
       try {
@@ -194,6 +194,67 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="backImage" className="block text-sm font-medium text-gray-700">
+            Outside/Back Image (Image containing SAMPLE label)
+            </label>
+            <input
+              type="file"
+              id="backImage"
+              name="backImage"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleImageProcess(file);
+                }
+              }}
+              className="mt-1 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+            />
+            {processingImage && (
+              <div className="mt-2 text-sm text-blue-600">
+                Processing image...
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="frontImage" className="block text-sm font-medium text-gray-700">
+              Inside/Front Image
+            </label>
+            <input
+              type="file"
+              id="frontImage"
+              name="frontImage"
+              accept="image/*"
+              className="mt-1 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+            />
+          </div>
+
+            {/* <div>
+              <label htmlFor="dataImage" className="block text-sm font-medium text-gray-700">
+                Data Image
+              </label>
+              <input
+                type="file"
+                id="dataImage"
+                name="dataImage"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleImageProcess(file);
+                  }
+                }}
+                className="mt-1 block w-full"
+              />
+              {processingImage && (
+                <div className="mt-2 text-sm text-blue-600">
+                  Processing image...
+                </div>
+              )}
+            </div> */}
+
             <div>
               <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
                 Customer
@@ -219,13 +280,13 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
+              <label htmlFor="batchId" className="block text-sm font-medium text-gray-700">
+                Batch ID
               </label>
               <input
                 type="text"
-                id="description"
-                name="description"
+                id="batchId"
+                name="batchId"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
@@ -245,41 +306,16 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             </div>
 
             <div>
-              <label htmlFor="batchId" className="block text-sm font-medium text-gray-700">
-                Batch ID
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description
               </label>
               <input
                 type="text"
-                id="batchId"
-                name="batchId"
+                id="description"
+                name="description"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
-            </div>
-
-            <div>
-              <label htmlFor="dataImage" className="block text-sm font-medium text-gray-700">
-                Upload Image
-              </label>
-              <input
-                type="file"
-                id="dataImage"
-                name="dataImage"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleImageProcess(file);
-                  }
-                }}
-                className="mt-1 block w-full"
-                required
-              />
-              {processingImage && (
-                <div className="mt-2 text-sm text-blue-600">
-                  Processing image...
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">

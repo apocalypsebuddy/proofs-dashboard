@@ -67,59 +67,59 @@ export async function POST(request: Request) {
     const printerId = formData.get('printerId') as string;
     const printerName = formData.get('printerName') as string;
     const resourceId = formData.get('resourceId') as string;
+    const frontImage = formData.get('frontImage') as File;
+    const backImage = formData.get('backImage') as File;
     const dataImage = formData.get('dataImage') as File;
-
-    if (!dataImage) {
-      return NextResponse.json({ error: 'Image is required' }, { status: 400 });
-    }
 
     if (!resourceId) {
       return NextResponse.json({ error: 'Resource ID is required' }, { status: 400 });
     }
 
-    // TODO: Remove commented out old S3 upload code since we're just uploading a single image
-    // const frontImage = formData.get('frontImage') as File;
-    // const backImage = formData.get('backImage') as File;
-    
-    // if (!frontImage || !backImage) {
-    //   return NextResponse.json({ error: 'Both front and back images are required' }, { status: 400 });
-    // }
-
     // Generate unique S3 keys using provided resourceId
-    // const uploadDate = Date.now().toString();
-    // const frontKey = `${resourceId}_front_${uploadDate}`;
-    // const backKey = `${resourceId}_back_${uploadDate}`;
-
-    // Upload front image to S3
-    // const frontBuffer = Buffer.from(await frontImage.arrayBuffer());
-    // await s3Client.send(new PutObjectCommand({
-    //   Bucket: 'proofs-dashboard-dev',
-    //   Key: frontKey,
-    //   Body: frontBuffer,
-    //   ContentType: frontImage.type,
-    // }));
-
-    // Upload back image to S3
-    // const backBuffer = Buffer.from(await backImage.arrayBuffer());
-    // await s3Client.send(new PutObjectCommand({
-    //   Bucket: 'proofs-dashboard-dev',
-    //   Key: backKey,
-    //   Body: backBuffer,
-    //   ContentType: backImage.type,
-    // }));
-
-    // Generate unique S3 key using provided resourceId
     const uploadDate = Date.now().toString();
-    const uniqueDataImageS3Key = `${resourceId}_${uploadDate}`;
+    let frontImageS3Key = null;
+    let backImageS3Key = null;
+    let dataImageS3Key = null;
 
-    // Add dataImageS3Key to S3
-    const dataImageBuffer = Buffer.from(await dataImage.arrayBuffer());
-    await s3Client.send(new PutObjectCommand({
-      Bucket: 'proofs-dashboard-dev',
-      Key: uniqueDataImageS3Key,
-      Body: dataImageBuffer,
-      ContentType: dataImage.type,
-    }));
+    // Upload front image to S3 if provided
+    if (frontImage && frontImage.size > 0) {
+      frontImageS3Key = `${resourceId}_front_${uploadDate}`;
+      const frontBuffer = Buffer.from(await frontImage.arrayBuffer());
+      await s3Client.send(new PutObjectCommand({
+        Bucket: 'proofs-dashboard-dev',
+        Key: frontImageS3Key,
+        Body: frontBuffer,
+        ContentType: frontImage.type,
+      }));
+    }
+
+    // Upload back image to S3 if provided
+    if (backImage && backImage.size > 0) {
+      backImageS3Key = `${resourceId}_back_${uploadDate}`;
+      const backBuffer = Buffer.from(await backImage.arrayBuffer());
+      await s3Client.send(new PutObjectCommand({
+        Bucket: 'proofs-dashboard-dev',
+        Key: backImageS3Key,
+        Body: backBuffer,
+        ContentType: backImage.type,
+      }));
+    }
+
+    // Upload data image to S3 if provided
+    if (dataImage && dataImage.size > 0) {
+      dataImageS3Key = `${resourceId}_data_${uploadDate}`;
+      const dataImageBuffer = Buffer.from(await dataImage.arrayBuffer());
+      await s3Client.send(new PutObjectCommand({
+        Bucket: 'proofs-dashboard-dev',
+        Key: dataImageS3Key,
+        Body: dataImageBuffer,
+        ContentType: dataImage.type,
+      }));
+    }
+
+    console.log('frontImageS3Key at creation', frontImageS3Key);
+    console.log('backImageS3Key at creation', backImageS3Key);
+    console.log('dataImageS3Key at creation', dataImageS3Key);
 
     // Create proof record in database
     const proof = await prisma.proof.create({
@@ -131,12 +131,13 @@ export async function POST(request: Request) {
         printerId,
         printerName,
         resourceId,
-        dataImageS3Key: uniqueDataImageS3Key,
-        // These are the old fields that we're not using anymore
-        // printFrontUrl: `https://proofs-dashboard-dev.s3.us-west-2.amazonaws.com/${frontKey}`,
-        // printBackUrl: `https://proofs-dashboard-dev.s3.us-west-2.amazonaws.com/${backKey}`,
+        printFrontUrl: frontImageS3Key ? `https://proofs-dashboard-dev.s3.us-west-2.amazonaws.com/${frontImageS3Key}` : null,
+        printBackUrl: backImageS3Key ? `https://proofs-dashboard-dev.s3.us-west-2.amazonaws.com/${backImageS3Key}` : null,
+        dataImageS3Key: dataImageS3Key,
       },
     });
+
+    console.log('proof at creation', proof);
 
     return NextResponse.json(proof);
   } catch (error) {
