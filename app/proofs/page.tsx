@@ -269,6 +269,7 @@ export default function ProofsIndex() {
                     src={proof.signedDataImageUrl}
                     alt="Proof Image"
                     fill
+                    sizes="300px"
                     className="object-contain"
                   />
                 </div>
@@ -280,6 +281,7 @@ export default function ProofsIndex() {
                         src={proof.signedFrontUrl}
                         alt="Proof Image Front"
                         fill
+                        sizes="300px"
                         className="object-contain"
                       />
                     </div>
@@ -290,6 +292,7 @@ export default function ProofsIndex() {
                         src={proof.signedBackUrl}
                         alt="Proof Image Back"
                         fill
+                        sizes="300px"
                         className="object-contain"
                       />
                     </div>

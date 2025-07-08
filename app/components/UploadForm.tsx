@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { getCurrentUserInfo } from '@/app/utils/auth';
+// import { scanBarcodeFromFile } from './barcodeScanner';
 
 type Customer = {
   id: string;
@@ -61,9 +62,8 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
     setProcessingImage(true);
     setError(null);
     
-    // TODO: abstract this into a component
-    // ex: processImageApi(formData)
     try {
+      // Use the process-image API to get resourceId
       const formData = new FormData();
       formData.append('image', file);
       
@@ -72,45 +72,39 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
         body: formData,
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to process image');
-      }
+      // if (!response.ok) {
+      //   throw new Error('Failed to process image');
+      // }
       
       const data = await response.json();
-      console.log('processedImageData', data);
+      // Only using resource_id and batch_id for now
+      console.log('Processed image data:', data);
       
       // Auto-populate form fields
-      // document.getElementById works for now vs using setState or something
       const resourceIdInput = document.getElementById('resourceId') as HTMLInputElement;
       const batchIdInput = document.getElementById('batchId') as HTMLInputElement;
       const descriptionInput = document.getElementById('description') as HTMLInputElement;
       
-      if (resourceIdInput) resourceIdInput.value = data.resourceId;
-      if (batchIdInput) batchIdInput.value = data.batchId;
-      
-      // Auto-select customer if it matches
-      const matchingCustomer = customers.find(c => c.id === data.customerId);
-      if (matchingCustomer) {
-        setSelectedCustomer(matchingCustomer);
-      }
+      if (resourceIdInput) resourceIdInput.value = data.resourceId || '';
+      if (batchIdInput) batchIdInput.value = data.batchId || '';
       
       // Auto-populate description field
       // This is a bit unnecessary but it's fun
-      let resourceType : string = '';
-      if (data.resourceId.includes('sfm')) {
-        resourceType = 'Self Mailer';
-      } else if (data.resourceId.includes('psc')) {
-        resourceType = 'Postcard';
-      };
-      const autoDescription = `${data.customerName} ${resourceType}`;
       if (descriptionInput && descriptionInput.value === '') {
+        let resourceType : string = '';
+        if (data && data.resourceId && data.resourceId.includes('sfm')) {
+          resourceType = 'Self Mailer';
+        } else if (data && data.resourceId && data.resourceId.includes('psc')) {
+          resourceType = 'Postcard';
+        };
+        const autoDescription = `${selectedCustomer?.name} ${resourceType}`;
         descriptionInput.value = autoDescription;
       }
       // End unnecessary auto-population
       
     } catch (error) {
       console.error('Error processing image:', error);
-      setError(error instanceof Error ? error.message : 'Failed to process image');
+      setError(error instanceof Error ? error.message : 'Could not populate form fields with image data');
     } finally {
       setProcessingImage(false);
     }
@@ -195,6 +189,30 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
+              Customer
+            </label>
+            <select
+              id="customer"
+              name="customer"
+              value={selectedCustomer?.id || ''}
+              onChange={(e) => {
+                const customer = customers.find(c => c.id === e.target.value);
+                setSelectedCustomer(customer || null);
+              }}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select a customer</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label htmlFor="backImage" className="block text-sm font-medium text-gray-700">
             Outside/Back Image (Image containing SAMPLE label)
             </label>
@@ -255,29 +273,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
               )}
             </div> */}
 
-            <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
-                Customer
-              </label>
-              <select
-                id="customer"
-                name="customer"
-                value={selectedCustomer?.id || ''}
-                onChange={(e) => {
-                  const customer = customers.find(c => c.id === e.target.value);
-                  setSelectedCustomer(customer || null);
-                }}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select a customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            
 
             <div>
               <label htmlFor="batchId" className="block text-sm font-medium text-gray-700">

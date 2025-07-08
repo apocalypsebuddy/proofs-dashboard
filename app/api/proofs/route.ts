@@ -108,13 +108,13 @@ export async function POST(request: Request) {
     // Upload data image to S3 if provided
     if (dataImage && dataImage.size > 0) {
       dataImageS3Key = `${resourceId}_data_${uploadDate}`;
-      const dataImageBuffer = Buffer.from(await dataImage.arrayBuffer());
-      await s3Client.send(new PutObjectCommand({
-        Bucket: 'proofs-dashboard-dev',
+    const dataImageBuffer = Buffer.from(await dataImage.arrayBuffer());
+    await s3Client.send(new PutObjectCommand({
+      Bucket: 'proofs-dashboard-dev',
         Key: dataImageS3Key,
-        Body: dataImageBuffer,
-        ContentType: dataImage.type,
-      }));
+      Body: dataImageBuffer,
+      ContentType: dataImage.type,
+    }));
     }
 
     console.log('frontImageS3Key at creation', frontImageS3Key);
