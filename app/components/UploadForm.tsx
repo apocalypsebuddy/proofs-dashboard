@@ -231,7 +231,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             />
             {processingImage && (
               <div className="mt-2 text-sm text-blue-600">
-                Processing image...
+                Processing image to populate form fields...
               </div>
             )}
           </div>
@@ -249,6 +249,11 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             />
           </div>
 
+            {/* 
+            This is an optional field that is the frontImage and backImage combined 
+            It's not used yet, but it's here for future use
+            This was built when we thought we'd be merging the front and back images into a single image for upload
+            */}
             {/* <div>
               <label htmlFor="dataImage" className="block text-sm font-medium text-gray-700">
                 Data Image
