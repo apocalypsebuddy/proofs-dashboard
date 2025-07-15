@@ -18,6 +18,7 @@ export async function GET() {
     
     try {
       // Build the where clause based on user's role
+      // TODO: use accountId instead of userId
       const token = authHeader.split(' ')[1];
       const { userId, group } = await getUserIdentityFromToken(token);
 
@@ -106,6 +107,9 @@ export async function POST(request: Request) {
     }
 
     // Upload data image to S3 if provided
+    // This is an optional field that is the frontImage and backImage combined 
+    // It's not used yet, but it's here for future use
+    // This was built when we thought we'd be merging the front and back images into a single image for upload
     if (dataImage && dataImage.size > 0) {
       dataImageS3Key = `${resourceId}_data_${uploadDate}`;
     const dataImageBuffer = Buffer.from(await dataImage.arrayBuffer());
@@ -117,9 +121,9 @@ export async function POST(request: Request) {
     }));
     }
 
-    console.log('frontImageS3Key at creation', frontImageS3Key);
-    console.log('backImageS3Key at creation', backImageS3Key);
-    console.log('dataImageS3Key at creation', dataImageS3Key);
+    // console.log('frontImageS3Key at creation', frontImageS3Key);
+    // console.log('backImageS3Key at creation', backImageS3Key);
+    // console.log('dataImageS3Key at creation', dataImageS3Key);
 
     // Create proof record in database
     const proof = await prisma.proof.create({
@@ -137,7 +141,7 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log('proof at creation', proof);
+    // console.log('proof at creation', proof);
 
     return NextResponse.json(proof);
   } catch (error) {

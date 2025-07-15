@@ -261,6 +261,7 @@ export default function ProofsIndex() {
             </div>
 
             {/* Image Column */}
+            {/* TODO: Actually optimize images: using the "unoptimized" tag to prevent the image fetching from timing out */}
             <div className="flex items-center justify-center space-x-4">
               {/* if dataImageS3Key exists, show that image, otherwise show front image and back image */}
               {proof.dataImageS3Key && proof.signedDataImageUrl ? (
@@ -271,6 +272,7 @@ export default function ProofsIndex() {
                     fill
                     sizes="300px"
                     className="object-contain"
+                    unoptimized
                   />
                 </div>
               ) : ( 
@@ -283,6 +285,7 @@ export default function ProofsIndex() {
                         fill
                         sizes="300px"
                         className="object-contain"
+                        unoptimized
                       />
                     </div>
                   )}
@@ -294,6 +297,7 @@ export default function ProofsIndex() {
                         fill
                         sizes="300px"
                         className="object-contain"
+                        unoptimized
                       />
                     </div>
                   )}
