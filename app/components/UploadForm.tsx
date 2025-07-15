@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { getCurrentUserInfo } from '@/app/utils/auth';
+// import { scanBarcodeFromFile } from './barcodeScanner';
 
 type Customer = {
   id: string;
@@ -22,6 +23,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -32,6 +34,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
           throw new Error('Failed to fetch customers');
         }
         const customersList = await response.json();
+        // console.log('customersList', customersList);
         setCustomers(customersList);
 
         // Load current user info for printer details
@@ -54,6 +57,58 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
 
     loadData();
   }, []);
+
+  const handleImageProcess = async (file: File) => {
+    setProcessingImage(true);
+    setError(null);
+    
+    try {
+      // Use the process-image API to get resourceId
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/process-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      // if (!response.ok) {
+      //   throw new Error('Failed to process image');
+      // }
+      
+      const data = await response.json();
+      // Only using resource_id and batch_id for now
+      console.log('Processed image data:', data);
+      
+      // Auto-populate form fields
+      const resourceIdInput = document.getElementById('resourceId') as HTMLInputElement;
+      const batchIdInput = document.getElementById('batchId') as HTMLInputElement;
+      const descriptionInput = document.getElementById('description') as HTMLInputElement;
+      
+      if (resourceIdInput) resourceIdInput.value = data.resourceId || '';
+      if (batchIdInput) batchIdInput.value = data.batchId || '';
+      
+      // Auto-populate description field
+      // This is a bit unnecessary but it's fun
+      if (descriptionInput && descriptionInput.value === '') {
+        let resourceType : string = '';
+        if (data && data.resourceId && data.resourceId.includes('sfm')) {
+          resourceType = 'Self Mailer';
+        } else if (data && data.resourceId && data.resourceId.includes('psc')) {
+          resourceType = 'Postcard';
+        };
+        const autoDescription = `${selectedCustomer?.name} ${resourceType}`;
+        descriptionInput.value = autoDescription;
+      }
+      // End unnecessary auto-population
+      
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setError(error instanceof Error ? error.message : 'Could not populate form fields with image data');
+    } finally {
+      setProcessingImage(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,6 +137,7 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
         description: formData.get('description'),
         frontImage: formData.get('frontImage'),
         backImage: formData.get('backImage'),
+        dataImage: formData.get('dataImage'),
       });
 
       try {
@@ -117,6 +173,8 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
     return <div></div>;
   }
 
+  // TODO: abstract this into a component
+  // return ( <UploadForm /> )
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -130,38 +188,106 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
-                Customer
+          <div>
+            <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
+              Customer
+            </label>
+            <select
+              id="customer"
+              name="customer"
+              value={selectedCustomer?.id || ''}
+              onChange={(e) => {
+                const customer = customers.find(c => c.id === e.target.value);
+                setSelectedCustomer(customer || null);
+              }}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select a customer</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="backImage" className="block text-sm font-medium text-gray-700">
+            Outside/Back Image (Image containing SAMPLE label)
+            </label>
+            <input
+              type="file"
+              id="backImage"
+              name="backImage"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleImageProcess(file);
+                }
+              }}
+              className="mt-1 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+            />
+            {processingImage && (
+              <div className="mt-2 text-sm text-blue-600">
+                Processing image to populate form fields...
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="frontImage" className="block text-sm font-medium text-gray-700">
+              Inside/Front Image
+            </label>
+            <input
+              type="file"
+              id="frontImage"
+              name="frontImage"
+              accept="image/*"
+              className="mt-1 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+            />
+          </div>
+
+            {/* 
+            This is an optional field that is the frontImage and backImage combined 
+            It's not used yet, but it's here for future use
+            This was built when we thought we'd be merging the front and back images into a single image for upload
+            */}
+            {/* <div>
+              <label htmlFor="dataImage" className="block text-sm font-medium text-gray-700">
+                Data Image
               </label>
-              <select
-                id="customer"
-                name="customer"
-                value={selectedCustomer?.id || ''}
+              <input
+                type="file"
+                id="dataImage"
+                name="dataImage"
+                accept="image/*"
                 onChange={(e) => {
-                  const customer = customers.find(c => c.id === e.target.value);
-                  setSelectedCustomer(customer || null);
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleImageProcess(file);
+                  }
                 }}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select a customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                className="mt-1 block w-full"
+              />
+              {processingImage && (
+                <div className="mt-2 text-sm text-blue-600">
+                  Processing image...
+                </div>
+              )}
+            </div> */}
+
+            
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
+              <label htmlFor="batchId" className="block text-sm font-medium text-gray-700">
+                Batch ID
               </label>
               <input
                 type="text"
-                id="description"
-                name="description"
+                id="batchId"
+                name="batchId"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
@@ -181,42 +307,14 @@ export default function UploadForm({ isOpen, onClose, onSubmit }: UploadFormProp
             </div>
 
             <div>
-              <label htmlFor="batchId" className="block text-sm font-medium text-gray-700">
-                Batch ID
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description
               </label>
               <input
                 type="text"
-                id="batchId"
-                name="batchId"
+                id="description"
+                name="description"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="frontImage" className="block text-sm font-medium text-gray-700">
-                Front/Inside Image
-              </label>
-              <input
-                type="file"
-                id="frontImage"
-                name="frontImage"
-                accept="image/*"
-                className="mt-1 block w-full"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="backImage" className="block text-sm font-medium text-gray-700">
-                Back/Outside Image (with address block)
-              </label>
-              <input
-                type="file"
-                id="backImage"
-                name="backImage"
-                accept="image/*"
-                className="mt-1 block w-full"
                 required
               />
             </div>

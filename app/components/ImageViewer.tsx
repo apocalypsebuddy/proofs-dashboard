@@ -67,7 +67,9 @@ export default function ImageViewer({ src, alt, className = '' }: ImageViewerPro
           src={src}
           alt={alt}
           fill
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="object-contain"
+          unoptimized
         />
       </div>
 
@@ -93,6 +95,7 @@ export default function ImageViewer({ src, alt, className = '' }: ImageViewerPro
                 sizes="90vw"
                 className="object-contain"
                 priority
+                unoptimized
                 onLoadingComplete={() => setIsImageLoading(false)}
               />
             </div>

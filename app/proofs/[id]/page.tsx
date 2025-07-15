@@ -17,10 +17,12 @@ type Proof = {
   customerName: string;
   printerId: string;
   printerName: string;
-  printFrontUrl: string;
-  printBackUrl: string;
-  signedFrontUrl: string;
-  signedBackUrl: string;
+  printFrontUrl?: string | null;
+  printBackUrl?: string | null;
+  dataImageS3Key?: string | null;
+  signedFrontUrl?: string;
+  signedBackUrl?: string;
+  signedDataImageUrl?: string;
   flagged?: boolean;
 };
 
@@ -29,7 +31,7 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
   const [proof, setProof] = useState<Proof | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [signedUrls, setSignedUrls] = useState<{ front: string; back: string } | null>(null);
+  const [signedUrls, setSignedUrls] = useState<{ front?: string; back?: string; dataImage?: string } | null>(null);
   const [userGroups, setUserGroups] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -50,29 +52,53 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
         const data = await response.json();
         setProof(data);
 
-        // Extract keys from URLs
-        const frontKey = data.printFrontUrl.split('/').pop();
-        const backKey = data.printBackUrl.split('/').pop();
+        const signedUrls: { front?: string; back?: string; dataImage?: string } = {};
 
-        // Fetch signed URLs
-        const [frontResponse, backResponse] = await Promise.all([
-          fetch(`/api/signed-url?key=${frontKey}`),
-          fetch(`/api/signed-url?key=${backKey}`)
-        ]);
-
-        if (!frontResponse.ok || !backResponse.ok) {
-          throw new Error('Failed to fetch signed URLs');
+        // Handle legacy front/back URLs if they exist
+        if (data.printFrontUrl) {
+          const frontKey = data.printFrontUrl.split('/').pop();
+          if (frontKey) {
+            try {
+              const frontResponse = await fetch(`/api/signed-url?key=${frontKey}`);
+              if (frontResponse.ok) {
+                const frontData = await frontResponse.json();
+                signedUrls.front = frontData.url;
+              }
+            } catch (error) {
+              console.error('Failed to get signed URL for front image:', error);
+            }
+          }
         }
 
-        const [frontData, backData] = await Promise.all([
-          frontResponse.json(),
-          backResponse.json()
-        ]);
+        if (data.printBackUrl) {
+          const backKey = data.printBackUrl.split('/').pop();
+          if (backKey) {
+            try {
+              const backResponse = await fetch(`/api/signed-url?key=${backKey}`);
+              if (backResponse.ok) {
+                const backData = await backResponse.json();
+                signedUrls.back = backData.url;
+              }
+            } catch (error) {
+              console.error('Failed to get signed URL for back image:', error);
+            }
+          }
+        }
 
-        setSignedUrls({
-          front: frontData.url,
-          back: backData.url
-        });
+        // Handle new dataImageS3Key if it exists
+        if (data.dataImageS3Key) {
+          try {
+            const dataImageResponse = await fetch(`/api/signed-url?key=${data.dataImageS3Key}`);
+            if (dataImageResponse.ok) {
+              const dataImageData = await dataImageResponse.json();
+              signedUrls.dataImage = dataImageData.url;
+            }
+          } catch (error) {
+            console.error('Failed to get signed URL for data image:', error);
+          }
+        }
+
+        setSignedUrls(signedUrls);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -123,7 +149,7 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
     );
   }
 
-  if (error || !proof || !signedUrls) {
+  if (error || !proof) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="text-red-500 mb-4">{error || 'Proof not found'}</div>
@@ -150,23 +176,45 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
           </button>
       </div>
 
+      {/* if dataImageS3Key exists, show that image, otherwise show front image and back image */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Image Section */}
         <div className="space-y-4">
-          <div className="relative h-[400px]">
-            <ImageViewer
-              src={signedUrls.front}
-              alt="Proof Image Front"
-              className="h-full"
-            />
-          </div>
-          <div className="relative h-[400px]">
-            <ImageViewer
-              src={signedUrls.back}
-              alt="Proof Image Back"
-              className="h-full"
-            />
-          </div>
+          {proof.dataImageS3Key && signedUrls?.dataImage ? (
+            <div className="relative h-[400px]">
+              <ImageViewer
+                src={signedUrls.dataImage}
+                alt="Proof Image"
+                className="h-full"
+              />
+            </div>
+          ) : (
+            <>
+              {signedUrls?.front && (
+                <div className="relative h-[400px]">
+                  <ImageViewer
+                    src={signedUrls.front}
+                    alt="Proof Image Front"
+                    className="h-full"
+                  />
+                </div>
+              )}
+              {signedUrls?.back && (
+                <div className="relative h-[400px]">
+                  <ImageViewer
+                    src={signedUrls.back}
+                    alt="Proof Image Back"
+                    className="h-full"
+                  />
+                </div>
+              )}
+              {!signedUrls?.front && !signedUrls?.back && !signedUrls?.dataImage && (
+                <div className="h-[400px] flex items-center justify-center bg-gray-100 rounded">
+                  <span className="text-gray-500">No image available</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
         
         {/* Details Section */}
@@ -194,25 +242,32 @@ export default function ProofDetail({ params }: { params: Promise<{ id: string }
               )}
              
               {/* only show customer info if user is superadmin or printer */}
-              {(userGroups.includes('superadmin') || userGroups.includes('printer')) && (
+              {/* {(userGroups.includes('superadmin') || userGroups.includes('printer')) && (
                 <>
                   <label className="text-sm font-medium text-gray-500">Customer Name</label>
                   <p>{proof.customerName} <span className="text-gray-500 text-xs">(ID: {proof.customerId})</span></p>
                 </>
-              )}
+              )} */}
 
               {/* <label className="text-sm font-medium text-gray-500">Flagged</label>
               <p>{proof.flagged ? 'Yes' : 'No'}</p> */}
 
-              {/* Only show the URLs if the user is a superadmin */}
+              {/* Only show the URLs and printer info if the user is a superadmin */}
               {userGroups.includes('superadmin') && (
               <>
-                <label className="text-md font-medium text-gray-500">Admin:</label> <br />
+                <label className="text-md font-medium text-gray-500">Admin:</label> <br /><br />
+
+                <label className="text-sm font-medium text-gray-500">Printer Name</label>
+                <p>{proof.printerName} <span className="text-gray-500 text-xs">(ID: {proof.printerId})</span></p>
+
                 <label className="text-sm font-medium text-gray-500">Print Front URL</label>
-                <p className="text-xs">{proof.printFrontUrl}</p>
+                <p className="text-xs">{proof.printFrontUrl || 'Not available'}</p>
 
                 <label className="text-sm font-medium text-gray-500">Print Back URL</label>
-                <p className="text-xs">{proof.printBackUrl}</p>  
+                <p className="text-xs">{proof.printBackUrl || 'Not available'}</p>
+
+                <label className="text-sm font-medium text-gray-500">Data Image S3 Key</label>
+                <p className="text-xs">{proof.dataImageS3Key || 'Not available'}</p>
               </>
               )}
             </div>
