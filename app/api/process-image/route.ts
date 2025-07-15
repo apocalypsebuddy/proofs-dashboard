@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     // These envs aren't set yet
     console.log('imageProcessorUrl', imageProcessorUrl);
-    console.log('imageProcessorApiKey', imageProcessorApiKey);
+
     const externalResponse = await fetch(imageProcessorUrl, {
       method: 'POST',
       headers: {
