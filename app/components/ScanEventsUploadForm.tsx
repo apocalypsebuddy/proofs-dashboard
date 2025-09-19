@@ -11,13 +11,15 @@ const PRINTERS = [
   { id: 'wolverine', name: 'Wolverine' },
 ];
 
-const ACCOUNTS = [
-  { id: '138d5014f22d28be2700', name: 'Verizon' },
-  { id: '8a0e618e3d7916032cd1', name: 'Capital One' },
-  // { id: 'acc_003', name: 'Gamma Enterprises' },
-  // { id: 'acc_004', name: 'Delta Solutions' },
-  // { id: 'acc_005', name: 'Epsilon Group' },
-];
+// Commenting out account selection for now
+// Unfortunately that means a bunch of other related code is also commented out and it's ugly
+// const ACCOUNTS = [
+//   { id: '138d5014f22d28be2700', name: 'Verizon' },
+//   { id: '8a0e618e3d7916032cd1', name: 'Capital One' },
+//   // { id: 'acc_003', name: 'Gamma Enterprises' },
+//   // { id: 'acc_004', name: 'Delta Solutions' },
+//   // { id: 'acc_005', name: 'Epsilon Group' },
+// ];
 
 type ScanEventsUploadFormProps = {
   isOpen: boolean;
@@ -45,15 +47,22 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     page2: false,
   });
   const [printerSuggestions, setPrinterSuggestions] = useState<{ id: string; name: string }[]>([]);
-  const [accountSuggestions, setAccountSuggestions] = useState<{ id: string; name: string }[]>([]);
+  // const [accountSuggestions, setAccountSuggestions] = useState<{ id: string; name: string }[]>([]);
   const [showPrinterSuggestions, setShowPrinterSuggestions] = useState(false);
-  const [showAccountSuggestions, setShowAccountSuggestions] = useState(false);
+  // const [showAccountSuggestions, setShowAccountSuggestions] = useState(false);
   const [highlightedPrinterIndex, setHighlightedPrinterIndex] = useState(-1);
-  const [highlightedAccountIndex, setHighlightedAccountIndex] = useState(-1);
+  // const [highlightedAccountIndex, setHighlightedAccountIndex] = useState(-1);
   const [compressingImage, setCompressingImage] = useState<{ page1: boolean; page2: boolean }>({
     page1: false,
     page2: false,
   });
+
+  // Function to extract resource ID from filename
+  const extractResourceIdFromFilename = (filename: string): string | null => {
+    // Pattern: ltr_b77df2a07bf11b96.png or psc_b77df2a07bf11b96_01.png, etc.
+    const match = filename.match(/^((?:ltr|psc)_[a-f0-9]+)(?:_\d+)?\.(png|jpg|jpeg)$/i);
+    return match ? match[1] : null;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -87,29 +96,29 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     }
   };
 
-  const handleAccountNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      accountName: value,
-    }));
+  // const handleAccountNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     accountName: value,
+  //   }));
 
-    // Filter suggestions based on input
-    const filtered = ACCOUNTS.filter(account =>
-      account.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setAccountSuggestions(filtered);
-    setShowAccountSuggestions(value.length > 0 && filtered.length > 0);
-    setHighlightedAccountIndex(-1); // Reset highlighted index
+  //   // Filter suggestions based on input
+  //   const filtered = ACCOUNTS.filter(account =>
+  //     account.name.toLowerCase().includes(value.toLowerCase())
+  //   );
+  //   setAccountSuggestions(filtered);
+  //   setShowAccountSuggestions(value.length > 0 && filtered.length > 0);
+  //   setHighlightedAccountIndex(-1); // Reset highlighted index
 
-    // Clear ID if no exact match
-    if (!ACCOUNTS.find(a => a.name === value)) {
-      setFormData(prev => ({
-        ...prev,
-        accountId: '',
-      }));
-    }
-  };
+  //   // Clear ID if no exact match
+  //   if (!ACCOUNTS.find(a => a.name === value)) {
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       accountId: '',
+  //     }));
+  //   }
+  // };
 
   const handlePrinterSuggestionClick = (printer: { id: string; name: string }) => {
     setFormData(prev => ({
@@ -121,15 +130,15 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     setHighlightedPrinterIndex(-1);
   };
 
-  const handleAccountSuggestionClick = (account: { id: string; name: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      accountName: account.name,
-      accountId: account.id,
-    }));
-    setShowAccountSuggestions(false);
-    setHighlightedAccountIndex(-1);
-  };
+  // const handleAccountSuggestionClick = (account: { id: string; name: string }) => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     accountName: account.name,
+  //     accountId: account.id,
+  //   }));
+  //   setShowAccountSuggestions(false);
+  //   setHighlightedAccountIndex(-1);
+  // };
 
   const handlePrinterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showPrinterSuggestions || printerSuggestions.length === 0) return;
@@ -160,34 +169,34 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     }
   };
 
-  const handleAccountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showAccountSuggestions || accountSuggestions.length === 0) return;
+  // const handleAccountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (!showAccountSuggestions || accountSuggestions.length === 0) return;
 
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedAccountIndex(prev => 
-          prev < accountSuggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedAccountIndex(prev => 
-          prev > 0 ? prev - 1 : accountSuggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlightedAccountIndex >= 0 && accountSuggestions[highlightedAccountIndex]) {
-          handleAccountSuggestionClick(accountSuggestions[highlightedAccountIndex]);
-        }
-        break;
-      case 'Escape':
-        setShowAccountSuggestions(false);
-        setHighlightedAccountIndex(-1);
-        break;
-    }
-  };
+  //   switch (e.key) {
+  //     case 'ArrowDown':
+  //       e.preventDefault();
+  //       setHighlightedAccountIndex(prev => 
+  //         prev < accountSuggestions.length - 1 ? prev + 1 : 0
+  //       );
+  //       break;
+  //     case 'ArrowUp':
+  //       e.preventDefault();
+  //       setHighlightedAccountIndex(prev => 
+  //         prev > 0 ? prev - 1 : accountSuggestions.length - 1
+  //       );
+  //       break;
+  //     case 'Enter':
+  //       e.preventDefault();
+  //       if (highlightedAccountIndex >= 0 && accountSuggestions[highlightedAccountIndex]) {
+  //         handleAccountSuggestionClick(accountSuggestions[highlightedAccountIndex]);
+  //       }
+  //       break;
+  //     case 'Escape':
+  //       setShowAccountSuggestions(false);
+  //       setHighlightedAccountIndex(-1);
+  //       break;
+  //   }
+  // };
 
   const clearFormState = () => {
     setFormData({
@@ -203,11 +212,11 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     setPage1Image(null);
     setPage2Image(null);
     setPrinterSuggestions([]);
-    setAccountSuggestions([]);
+    // setAccountSuggestions([]);
     setShowPrinterSuggestions(false);
-    setShowAccountSuggestions(false);
+    // setShowAccountSuggestions(false);
     setHighlightedPrinterIndex(-1);
-    setHighlightedAccountIndex(-1);
+    // setHighlightedAccountIndex(-1);
     setCompressingImage({ page1: false, page2: false });
     setError(null);
   };
@@ -278,6 +287,15 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, page: 'page1' | 'page2') => {
     const file = e.target.files?.[0];
     if (file) {
+      // Try to extract resource ID from filename and auto-populate if not already set
+      const extractedResourceId = extractResourceIdFromFilename(file.name);
+      if (extractedResourceId && !formData.resourceId) {
+        setFormData(prev => ({
+          ...prev,
+          resourceId: extractedResourceId,
+        }));
+      }
+
       // Check if file is too large and needs compression
       const fileSizeMB = file.size / (1024 * 1024);
       
@@ -586,7 +604,7 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
                 </div>
 
                 {/* Account Name with Autocomplete */}
-                <div className="relative">
+                {/* <div className="relative">
                   <label htmlFor="accountName" className="block text-sm font-medium text-gray-700">
                     Account Name
                   </label>
@@ -609,9 +627,9 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
                     placeholder="Type account name..."
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
-                  
+                   */}
                   {/* Account Suggestions Dropdown */}
-                  {showAccountSuggestions && accountSuggestions.length > 0 && (
+                  {/* {showAccountSuggestions && accountSuggestions.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                       {accountSuggestions.map((account, index) => (
                         <div
@@ -628,18 +646,18 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
                         </div>
                       ))}
                     </div>
-                  )}
+                  )} */}
                   
                   {/* Show selected account ID */}
-                  {formData.accountId && (
+                  {/* {formData.accountId && (
                     <p className="mt-1 text-sm text-gray-600">
                       ID: {formData.accountId}
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 {/* Account ID */}
-                <div>
+                {/* <div>
                   <label htmlFor="accountId" className="block text-sm font-medium text-gray-700">
                     Account ID
                   </label>
@@ -652,7 +670,7 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
                     placeholder="Auto-filled when selecting from suggestions"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
-                </div>
+                </div> */}
 
                 {/* Work Order Number */}
                 <div>
