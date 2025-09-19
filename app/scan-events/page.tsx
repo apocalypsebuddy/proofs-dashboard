@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AutocompleteInput from "../components/AutocompleteInput";
+import ScanEventsUploadForm from "../components/ScanEventsUploadForm";
 
 // Types for scan events API response
 type ScanEvent = {
@@ -73,6 +74,7 @@ export default function ScanEventsIndex() {
   const [accountNameFilter, setAccountNameFilter] = useState('');
   const [batchIdFilter, setBatchIdFilter] = useState('');
   const [workOrderFilter, setWorkOrderFilter] = useState('');
+  const [isUploadFormOpen, setIsUploadFormOpen] = useState(false);
 
   const fetchScanEvents = async () => {
     try {
@@ -201,70 +203,91 @@ export default function ScanEventsIndex() {
       <div className="border-b border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Scan Events</h1>
-          <div className="text-sm text-gray-500">
-            {searchTerm ? `${filteredGroups.length} of ${scanEvents.summary.total_resources}` : scanEvents.summary.total_resources} resources, {scanEvents.summary.total_scans} total scans
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              {searchTerm ? `${filteredGroups.length} of ${scanEvents.summary.total_resources}` : scanEvents.summary.total_resources} resources, {scanEvents.summary.total_scans} total scans
+            </div>
+            <button
+              onClick={() => setIsUploadFormOpen(true)}
+              className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Upload Scans
+            </button>
           </div>
         </div>
         
         {/* Search Filters */}
-        <div className="mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2 items-center">
             {/* Resource ID Search */}
-            <AutocompleteInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Search by resource ID..."
-              options={autocompleteOptions.resourceIds}
-              showSearchIcon={true}
-            />
+            <div className="w-48">
+              <AutocompleteInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Resource ID..."
+                options={autocompleteOptions.resourceIds}
+                showSearchIcon={true}
+                className="text-xs py-1"
+              />
+            </div>
 
             {/* Printer Name Search */}
-            <AutocompleteInput
-              value={printerNameFilter}
-              onChange={setPrinterNameFilter}
-              placeholder="Search by printer name..."
-              options={autocompleteOptions.printerNames}
-            />
+            <div className="w-40">
+              <AutocompleteInput
+                value={printerNameFilter}
+                onChange={setPrinterNameFilter}
+                placeholder="Printer..."
+                options={autocompleteOptions.printerNames}
+                className="text-xs py-1"
+              />
+            </div>
 
             {/* Account Name Search */}
-            <AutocompleteInput
-              value={accountNameFilter}
-              onChange={setAccountNameFilter}
-              placeholder="Search by account name..."
-              options={autocompleteOptions.accountNames}
-            />
+            <div className="w-40">
+              <AutocompleteInput
+                value={accountNameFilter}
+                onChange={setAccountNameFilter}
+                placeholder="Account..."
+                options={autocompleteOptions.accountNames}
+                className="text-xs py-1"
+              />
+            </div>
 
             {/* Batch ID Search */}
-            <AutocompleteInput
-              value={batchIdFilter}
-              onChange={setBatchIdFilter}
-              placeholder="Search by batch ID..."
-              options={autocompleteOptions.batchIds}
-            />
+            <div className="w-40">
+              <AutocompleteInput
+                value={batchIdFilter}
+                onChange={setBatchIdFilter}
+                placeholder="Batch ID..."
+                options={autocompleteOptions.batchIds}
+                className="text-xs py-1"
+              />
+            </div>
 
             {/* Work Order Search */}
-            <AutocompleteInput
-              value={workOrderFilter}
-              onChange={setWorkOrderFilter}
-              placeholder="Search by work order..."
-              options={autocompleteOptions.workOrderNumbers}
-            />
+            <div className="w-40">
+              <AutocompleteInput
+                value={workOrderFilter}
+                onChange={setWorkOrderFilter}
+                placeholder="Work Order..."
+                options={autocompleteOptions.workOrderNumbers}
+                className="text-xs py-1"
+              />
+            </div>
 
             {/* Clear All Filters */}
-            <div className="flex items-center">
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setPrinterNameFilter('');
-                  setAccountNameFilter('');
-                  setBatchIdFilter('');
-                  setWorkOrderFilter('');
-                }}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Clear All
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setPrinterNameFilter('');
+                setAccountNameFilter('');
+                setBatchIdFilter('');
+                setWorkOrderFilter('');
+              }}
+              className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 whitespace-nowrap"
+            >
+              Clear All
+            </button>
           </div>
         </div>
       </div>
@@ -362,6 +385,16 @@ export default function ScanEventsIndex() {
           {scanEvents.pagination.hasMore && " (more pages available)"}
         </div>
       )}
+
+      {/* Upload Form Modal */}
+      <ScanEventsUploadForm
+        isOpen={isUploadFormOpen}
+        onClose={() => setIsUploadFormOpen(false)}
+        onUploadComplete={() => {
+          // Refresh the scan events data after successful upload
+          fetchScanEvents();
+        }}
+      />
     </div>
   );
 }
