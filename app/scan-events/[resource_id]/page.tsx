@@ -52,8 +52,29 @@ export default function ScanEventDetail({ params }: { params: Promise<{ resource
   const [scanEventDetail, setScanEventDetail] = useState<ScanEventDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   const { resource_id } = use(params);
+
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrl(url);
+      // Reset the copied state after 2 seconds
+      setTimeout(() => setCopiedUrl(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    }
+  };
 
   useEffect(() => {
     const fetchScanEventDetail = async () => {
@@ -216,6 +237,37 @@ export default function ScanEventDetail({ params }: { params: Promise<{ resource
                         <p>{item.page_number}</p>
                       </div>
                     )}
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">URL</label>
+                      <div className="flex items-center gap-2">
+                        <p 
+                          className="text-sm flex-1 truncate" 
+                          title={item.url}
+                        >
+                          {item.url.length > 60 ? `${item.url.substring(0, 60)}...` : item.url}
+                        </p>
+                        <button
+                          onClick={() => copyToClipboard(item.url)}
+                          className={`p-1 rounded transition-colors ${
+                            copiedUrl === item.url
+                              ? 'text-green-600 bg-green-50'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                          }`}
+                          title={copiedUrl === item.url ? "Copied!" : "Copy URL to clipboard"}
+                        >
+                          {copiedUrl === item.url ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
