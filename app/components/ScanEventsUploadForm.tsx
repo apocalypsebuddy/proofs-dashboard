@@ -47,11 +47,8 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     page1: false,
     page2: false,
   });
-  const [printerSuggestions, setPrinterSuggestions] = useState<{ id: string; name: string }[]>([]);
   // const [accountSuggestions, setAccountSuggestions] = useState<{ id: string; name: string }[]>([]);
-  const [showPrinterSuggestions, setShowPrinterSuggestions] = useState(false);
   // const [showAccountSuggestions, setShowAccountSuggestions] = useState(false);
-  const [highlightedPrinterIndex, setHighlightedPrinterIndex] = useState(-1);
   // const [highlightedAccountIndex, setHighlightedAccountIndex] = useState(-1);
   const [compressingImage, setCompressingImage] = useState<{ page1: boolean; page2: boolean }>({
     page1: false,
@@ -69,9 +66,6 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
   });
   const [bulkPrinterId, setBulkPrinterId] = useState('');
   const [bulkPrinterName, setBulkPrinterName] = useState('');
-  const [bulkPrinterSuggestions, setBulkPrinterSuggestions] = useState<{ id: string; name: string }[]>([]);
-  const [showBulkPrinterSuggestions, setShowBulkPrinterSuggestions] = useState(false);
-  const [highlightedBulkPrinterIndex, setHighlightedBulkPrinterIndex] = useState(-1);
 
   // Function to extract resource ID from filename
   const extractResourceIdFromFilename = (filename: string): string | null => {
@@ -88,29 +82,6 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     }));
   };
 
-  const handlePrinterNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      printerName: value,
-    }));
-
-    // Filter suggestions based on input
-    const filtered = PRINTERS.filter(printer =>
-      printer.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setPrinterSuggestions(filtered);
-    setShowPrinterSuggestions(value.length > 0 && filtered.length > 0);
-    setHighlightedPrinterIndex(-1); // Reset highlighted index
-
-    // Clear ID if no exact match
-    if (!PRINTERS.find(p => p.name === value)) {
-      setFormData(prev => ({
-        ...prev,
-        printerId: '',
-      }));
-    }
-  };
 
   // const handleAccountNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   //   const value = e.target.value;
@@ -136,70 +107,6 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
   //   }
   // };
 
-  const handlePrinterSuggestionClick = (printer: { id: string; name: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      printerName: printer.name,
-      printerId: printer.id,
-    }));
-    setShowPrinterSuggestions(false);
-    setHighlightedPrinterIndex(-1);
-  };
-
-  // Bulk printer functions
-  const handleBulkPrinterNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setBulkPrinterName(value);
-
-    // Filter suggestions based on input
-    const filtered = PRINTERS.filter(printer =>
-      printer.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setBulkPrinterSuggestions(filtered);
-    setShowBulkPrinterSuggestions(value.length > 0 && filtered.length > 0);
-    setHighlightedBulkPrinterIndex(-1); // Reset highlighted index
-
-    // Clear ID if no exact match
-    if (!PRINTERS.find(p => p.name === value)) {
-      setBulkPrinterId('');
-    }
-  };
-
-  const handleBulkPrinterSuggestionClick = (printer: { id: string; name: string }) => {
-    setBulkPrinterName(printer.name);
-    setBulkPrinterId(printer.id);
-    setShowBulkPrinterSuggestions(false);
-    setHighlightedBulkPrinterIndex(-1);
-  };
-
-  const handleBulkPrinterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showBulkPrinterSuggestions || bulkPrinterSuggestions.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedBulkPrinterIndex(prev => 
-          prev < bulkPrinterSuggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedBulkPrinterIndex(prev => 
-          prev > 0 ? prev - 1 : bulkPrinterSuggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlightedBulkPrinterIndex >= 0 && bulkPrinterSuggestions[highlightedBulkPrinterIndex]) {
-          handleBulkPrinterSuggestionClick(bulkPrinterSuggestions[highlightedBulkPrinterIndex]);
-        }
-        break;
-      case 'Escape':
-        setShowBulkPrinterSuggestions(false);
-        setHighlightedBulkPrinterIndex(-1);
-        break;
-    }
-  };
 
   // const handleAccountSuggestionClick = (account: { id: string; name: string }) => {
   //   setFormData(prev => ({
@@ -211,34 +118,6 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
   //   setHighlightedAccountIndex(-1);
   // };
 
-  const handlePrinterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showPrinterSuggestions || printerSuggestions.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedPrinterIndex(prev => 
-          prev < printerSuggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedPrinterIndex(prev => 
-          prev > 0 ? prev - 1 : printerSuggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlightedPrinterIndex >= 0 && printerSuggestions[highlightedPrinterIndex]) {
-          handlePrinterSuggestionClick(printerSuggestions[highlightedPrinterIndex]);
-        }
-        break;
-      case 'Escape':
-        setShowPrinterSuggestions(false);
-        setHighlightedPrinterIndex(-1);
-        break;
-    }
-  };
 
   // const handleAccountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
   //   if (!showAccountSuggestions || accountSuggestions.length === 0) return;
@@ -282,11 +161,8 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     });
     setPage1Image(null);
     setPage2Image(null);
-    setPrinterSuggestions([]);
     // setAccountSuggestions([]);
-    setShowPrinterSuggestions(false);
     // setShowAccountSuggestions(false);
-    setHighlightedPrinterIndex(-1);
     // setHighlightedAccountIndex(-1);
     setCompressingImage({ page1: false, page2: false });
     setError(null);
@@ -294,9 +170,6 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     setBulkProgress({ current: 0, total: 0, currentFile: '', status: '' });
     setBulkPrinterId('');
     setBulkPrinterName('');
-    setBulkPrinterSuggestions([]);
-    setShowBulkPrinterSuggestions(false);
-    setHighlightedBulkPrinterIndex(-1);
   };
 
   // Bulk upload functions
@@ -755,74 +628,34 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
                   />
                 </div>
 
-                {/* Printer Name with Autocomplete */}
-                <div className="relative">
+                {/* Printer Name Dropdown */}
+                <div>
                   <label htmlFor="printerName" className="block text-sm font-medium text-gray-700">
                     Printer Name
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="printerName"
                     name="printerName"
                     value={formData.printerName}
-                    onChange={handlePrinterNameChange}
-                    onKeyDown={handlePrinterKeyDown}
-                    onFocus={() => {
-                      if (formData.printerName.length > 0) {
-                        setShowPrinterSuggestions(true);
-                      }
+                    onChange={(e) => {
+                      const selectedPrinter = PRINTERS.find(p => p.name === e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        printerName: e.target.value,
+                        printerId: selectedPrinter?.id || '',
+                      }));
                     }}
-                    onBlur={() => {
-                      // Delay hiding suggestions to allow clicking on them
-                      setTimeout(() => setShowPrinterSuggestions(false), 200);
-                    }}
-                    placeholder="Type printer name..."
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  
-                  {/* Printer Suggestions Dropdown */}
-                  {showPrinterSuggestions && printerSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {printerSuggestions.map((printer, index) => (
-                        <div
-                          key={printer.id}
-                          onClick={() => handlePrinterSuggestionClick(printer)}
-                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 ${
-                            index === highlightedPrinterIndex
-                              ? 'bg-blue-100 text-blue-900'
-                              : 'hover:bg-gray-100'
-                          }`}
-                        >
-                          <div className="font-medium">{printer.name}</div>
-                          <div className="text-gray-500 text-xs">ID: {printer.id}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Show selected printer ID */}
-                  {formData.printerId && (
-                    <p className="mt-1 text-sm text-gray-600">
-                      ID: {formData.printerId}
-                    </p>
-                  )}
+                  >
+                    <option value="">Select a printer...</option>
+                    {PRINTERS.map((printer) => (
+                      <option key={printer.id} value={printer.name}>
+                        {printer.name} (ID: {printer.id})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Printer ID */}
-                <div>
-                  <label htmlFor="printerId" className="block text-sm font-medium text-gray-700">
-                    Printer ID
-                  </label>
-                  <input
-                    type="text"
-                    id="printerId"
-                    name="printerId"
-                    value={formData.printerId}
-                    onChange={handleInputChange}
-                    placeholder="Auto-filled when selecting from suggestions"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
 
                 {/* Account Name with Autocomplete */}
                 {/* <div className="relative">
@@ -952,56 +785,28 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
               </div>
 
               {/* Printer Selection for Bulk Upload */}
-              <div className="relative">
+              <div>
                 <label htmlFor="bulkPrinterName" className="block text-sm font-medium text-gray-700">
                   Printer Name (Optional)
                 </label>
-                <input
-                  type="text"
+                <select
                   id="bulkPrinterName"
                   name="bulkPrinterName"
                   value={bulkPrinterName}
-                  onChange={handleBulkPrinterNameChange}
-                  onKeyDown={handleBulkPrinterKeyDown}
-                  onFocus={() => {
-                    if (bulkPrinterName.length > 0) {
-                      setShowBulkPrinterSuggestions(true);
-                    }
+                  onChange={(e) => {
+                    const selectedPrinter = PRINTERS.find(p => p.name === e.target.value);
+                    setBulkPrinterName(e.target.value);
+                    setBulkPrinterId(selectedPrinter?.id || '');
                   }}
-                  onBlur={() => {
-                    // Delay hiding suggestions to allow clicking on them
-                    setTimeout(() => setShowBulkPrinterSuggestions(false), 200);
-                  }}
-                  placeholder="Type printer name..."
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                
-                {/* Bulk Printer Suggestions Dropdown */}
-                {showBulkPrinterSuggestions && bulkPrinterSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                    {bulkPrinterSuggestions.map((printer, index) => (
-                      <div
-                        key={printer.id}
-                        onClick={() => handleBulkPrinterSuggestionClick(printer)}
-                        className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 ${
-                          index === highlightedBulkPrinterIndex
-                            ? 'bg-blue-100 text-blue-900'
-                            : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="font-medium">{printer.name}</div>
-                        <div className="text-gray-500 text-xs">ID: {printer.id}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Show selected bulk printer ID */}
-                {bulkPrinterId && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    ID: {bulkPrinterId}
-                  </p>
-                )}
+                >
+                  <option value="">Select a printer...</option>
+                  {PRINTERS.map((printer) => (
+                    <option key={printer.id} value={printer.name}>
+                      {printer.name} (ID: {printer.id})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {bulkFiles.length > 0 && (
