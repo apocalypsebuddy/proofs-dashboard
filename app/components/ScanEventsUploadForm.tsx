@@ -28,6 +28,7 @@ type ScanEventsUploadFormProps = {
 };
 
 export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete }: ScanEventsUploadFormProps) {
+  const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
   const [formData, setFormData] = useState({
     resourceId: '',
     printerId: '',
@@ -56,6 +57,21 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     page1: false,
     page2: false,
   });
+  
+  // Bulk upload state
+  const [bulkFiles, setBulkFiles] = useState<File[]>([]);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number; currentFile: string; status: string }>({
+    current: 0,
+    total: 0,
+    currentFile: '',
+    status: '',
+  });
+  const [bulkPrinterId, setBulkPrinterId] = useState('');
+  const [bulkPrinterName, setBulkPrinterName] = useState('');
+  const [bulkPrinterSuggestions, setBulkPrinterSuggestions] = useState<{ id: string; name: string }[]>([]);
+  const [showBulkPrinterSuggestions, setShowBulkPrinterSuggestions] = useState(false);
+  const [highlightedBulkPrinterIndex, setHighlightedBulkPrinterIndex] = useState(-1);
 
   // Function to extract resource ID from filename
   const extractResourceIdFromFilename = (filename: string): string | null => {
@@ -128,6 +144,61 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     }));
     setShowPrinterSuggestions(false);
     setHighlightedPrinterIndex(-1);
+  };
+
+  // Bulk printer functions
+  const handleBulkPrinterNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setBulkPrinterName(value);
+
+    // Filter suggestions based on input
+    const filtered = PRINTERS.filter(printer =>
+      printer.name.toLowerCase().includes(value.toLowerCase())
+    );
+    setBulkPrinterSuggestions(filtered);
+    setShowBulkPrinterSuggestions(value.length > 0 && filtered.length > 0);
+    setHighlightedBulkPrinterIndex(-1); // Reset highlighted index
+
+    // Clear ID if no exact match
+    if (!PRINTERS.find(p => p.name === value)) {
+      setBulkPrinterId('');
+    }
+  };
+
+  const handleBulkPrinterSuggestionClick = (printer: { id: string; name: string }) => {
+    setBulkPrinterName(printer.name);
+    setBulkPrinterId(printer.id);
+    setShowBulkPrinterSuggestions(false);
+    setHighlightedBulkPrinterIndex(-1);
+  };
+
+  const handleBulkPrinterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showBulkPrinterSuggestions || bulkPrinterSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedBulkPrinterIndex(prev => 
+          prev < bulkPrinterSuggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedBulkPrinterIndex(prev => 
+          prev > 0 ? prev - 1 : bulkPrinterSuggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedBulkPrinterIndex >= 0 && bulkPrinterSuggestions[highlightedBulkPrinterIndex]) {
+          handleBulkPrinterSuggestionClick(bulkPrinterSuggestions[highlightedBulkPrinterIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowBulkPrinterSuggestions(false);
+        setHighlightedBulkPrinterIndex(-1);
+        break;
+    }
   };
 
   // const handleAccountSuggestionClick = (account: { id: string; name: string }) => {
@@ -219,6 +290,124 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
     // setHighlightedAccountIndex(-1);
     setCompressingImage({ page1: false, page2: false });
     setError(null);
+    setBulkFiles([]);
+    setBulkProgress({ current: 0, total: 0, currentFile: '', status: '' });
+    setBulkPrinterId('');
+    setBulkPrinterName('');
+    setBulkPrinterSuggestions([]);
+    setShowBulkPrinterSuggestions(false);
+    setHighlightedBulkPrinterIndex(-1);
+  };
+
+  // Bulk upload functions
+  const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setBulkFiles(files);
+  };
+
+  const groupFilesByResourceId = (files: File[]) => {
+    const groups: { [resourceId: string]: File[] } = {};
+    
+    files.forEach(file => {
+      const resourceId = extractResourceIdFromFilename(file.name);
+      if (resourceId) {
+        if (!groups[resourceId]) {
+          groups[resourceId] = [];
+        }
+        groups[resourceId].push(file);
+      }
+    });
+    
+    return groups;
+  };
+
+  const uploadBulkFiles = async () => {
+    if (bulkFiles.length === 0) {
+      setError('Please select files to upload');
+      return;
+    }
+
+    setBulkUploading(true);
+    setError(null);
+    
+    const fileGroups = groupFilesByResourceId(bulkFiles);
+    const totalFiles = bulkFiles.length;
+    let processedFiles = 0;
+    
+    setBulkProgress({ current: 0, total: totalFiles, currentFile: '', status: '' });
+
+    try {
+      for (const [resourceId, files] of Object.entries(fileGroups)) {
+        for (const file of files) {
+          setBulkProgress({ 
+            current: processedFiles, 
+            total: totalFiles, 
+            currentFile: file.name,
+            status: 'Processing...'
+          });
+
+          // Check if file needs compression (same logic as single upload)
+          const fileSizeMB = file.size / (1024 * 1024);
+          let fileToUpload = file;
+          
+          if (fileSizeMB > 4) {
+            setBulkProgress({ 
+              current: processedFiles, 
+              total: totalFiles, 
+              currentFile: file.name,
+              status: 'Compressing...'
+            });
+            console.log(`Compressing ${file.name}: ${fileSizeMB.toFixed(2)}MB`);
+            try {
+              fileToUpload = await compressImage(file);
+              const compressedSizeMB = fileToUpload.size / (1024 * 1024);
+              console.log(`Compressed ${file.name}: ${compressedSizeMB.toFixed(2)}MB`);
+            } catch (error) {
+              console.error(`Error compressing ${file.name}:`, error);
+              // Continue with original file if compression fails
+            }
+          }
+
+          setBulkProgress({ 
+            current: processedFiles, 
+            total: totalFiles, 
+            currentFile: file.name,
+            status: 'Uploading...'
+          });
+
+          const uploadFormData = new FormData();
+          uploadFormData.append('resource_id', resourceId);
+          uploadFormData.append('file', fileToUpload);
+          
+          // Add printer information if provided
+          if (bulkPrinterId) uploadFormData.append('printer_id', bulkPrinterId);
+          if (bulkPrinterName) uploadFormData.append('printer_name', bulkPrinterName);
+
+          const response = await fetch('/api/scan-events', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to upload ${file.name}: ${response.status} ${errorText}`);
+          }
+
+          processedFiles++;
+        }
+      }
+
+      // Reset form and close
+      clearFormState();
+      onUploadComplete();
+      onClose();
+    } catch (error) {
+      console.error('Error uploading bulk files:', error);
+      setError(error instanceof Error ? error.message : 'Failed to upload files');
+    } finally {
+      setBulkUploading(false);
+      setBulkProgress({ current: 0, total: 0, currentFile: '', status: '' });
+    }
   };
 
   const compressImage = (file: File, maxSizeMB: number = 3.5): Promise<File> => {
@@ -414,6 +603,7 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
   };
 
   const isUploading = uploading || uploadProgress.page1 || uploadProgress.page2;
+  const isBulkUploading = bulkUploading;
 
   return (
     <Dialog open={isOpen} onClose={() => {
@@ -432,7 +622,38 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Tab Navigation */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('single')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'single'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Single Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('bulk')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'bulk'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Bulk Upload
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          {activeTab === 'single' ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {/* Required Fields */}
             <div>
               <label htmlFor="resourceId" className="block text-sm font-medium text-gray-700">
@@ -710,6 +931,154 @@ export default function ScanEventsUploadForm({ isOpen, onClose, onUploadComplete
               </button>
             </div>
           </form>
+          ) : (
+            /* Bulk Upload Form */
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="bulkFiles" className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Files
+                </label>
+                <input
+                  type="file"
+                  id="bulkFiles"
+                  multiple
+                  accept="image/*"
+                  onChange={handleBulkFileChange}
+                  className="block w-full file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Select multiple files with names like: ltr_b77df2a07bf11b96_01.png, psc_d163df4fec04aa08_02.png, etc.
+                </p>
+              </div>
+
+              {/* Printer Selection for Bulk Upload */}
+              <div className="relative">
+                <label htmlFor="bulkPrinterName" className="block text-sm font-medium text-gray-700">
+                  Printer Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="bulkPrinterName"
+                  name="bulkPrinterName"
+                  value={bulkPrinterName}
+                  onChange={handleBulkPrinterNameChange}
+                  onKeyDown={handleBulkPrinterKeyDown}
+                  onFocus={() => {
+                    if (bulkPrinterName.length > 0) {
+                      setShowBulkPrinterSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow clicking on them
+                    setTimeout(() => setShowBulkPrinterSuggestions(false), 200);
+                  }}
+                  placeholder="Type printer name..."
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+                
+                {/* Bulk Printer Suggestions Dropdown */}
+                {showBulkPrinterSuggestions && bulkPrinterSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {bulkPrinterSuggestions.map((printer, index) => (
+                      <div
+                        key={printer.id}
+                        onClick={() => handleBulkPrinterSuggestionClick(printer)}
+                        className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 ${
+                          index === highlightedBulkPrinterIndex
+                            ? 'bg-blue-100 text-blue-900'
+                            : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="font-medium">{printer.name}</div>
+                        <div className="text-gray-500 text-xs">ID: {printer.id}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Show selected bulk printer ID */}
+                {bulkPrinterId && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    ID: {bulkPrinterId}
+                  </p>
+                )}
+              </div>
+
+              {bulkFiles.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files ({bulkFiles.length})</h4>
+                  <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
+                    {bulkFiles.map((file, index) => {
+                      const resourceId = extractResourceIdFromFilename(file.name);
+                      return (
+                        <div key={index} className="flex justify-between items-center py-1 text-sm">
+                          <span className={resourceId ? 'text-gray-900' : 'text-red-600'}>
+                            {file.name}
+                          </span>
+                          {resourceId && (
+                            <span className="text-blue-600 font-medium">
+                              → {resourceId}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {bulkFiles.some(file => !extractResourceIdFromFilename(file.name)) && (
+                    <p className="mt-2 text-sm text-red-600">
+                      Some files don&apos;t match the expected naming pattern and will be skipped.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {isBulkUploading && (
+                <div className="bg-blue-50 p-4 rounded-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">
+                      {bulkProgress.status || 'Uploading...'}
+                    </span>
+                    <span className="text-sm text-blue-700">
+                      {bulkProgress.current} / {bulkProgress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  {bulkProgress.currentFile && (
+                    <p className="mt-2 text-sm text-blue-700">
+                      Current: {bulkProgress.currentFile}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearFormState();
+                    onClose();
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+                  disabled={isBulkUploading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={uploadBulkFiles}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
+                  disabled={isBulkUploading || bulkFiles.length === 0}
+                >
+                  {isBulkUploading ? 'Uploading...' : 'Upload All Files'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Dialog>
