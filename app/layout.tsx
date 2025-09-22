@@ -5,7 +5,7 @@ import ConfigureAmplify from "./amplify-config";
 import Navigation from "./components/Navigation";
 
 export const metadata: Metadata = {
-  title: "Pudding",
+  title: "Lob QC Solutions",
   description: "Dashboard for viewing and managing print proofs.",
 };
 
